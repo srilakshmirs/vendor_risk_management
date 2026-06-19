@@ -1,0 +1,288 @@
+{
+  "model_version": "rules-v1.1",
+  "total": 400,
+  "correct_anomaly": 360,
+  "correct_severity": 360,
+  "anomaly_accuracy": 0.9,
+  "severity_accuracy": 0.9,
+  "binary_recall": 1.0,
+  "binary_precision": 1.0,
+  "binary_f1": 1.0,
+  "recall_by_severity": {
+    "CRITICAL": 1.0,
+    "HIGH": 1.0,
+    "MEDIUM": 0.8875,
+    "LOW": 0.5441,
+    "NONE": 1.0
+  },
+  "precision_by_severity": {
+    "CRITICAL": 1.0,
+    "HIGH": 0.8333,
+    "MEDIUM": 0.8161,
+    "LOW": 1.0,
+    "NONE": 1.0
+  },
+  "support_by_severity": {
+    "CRITICAL": 52,
+    "HIGH": 120,
+    "MEDIUM": 80,
+    "LOW": 68,
+    "NONE": 80
+  },
+  "confusion_anomaly": [
+    {
+      "label": "BREACHED_VENDOR_HIGH_ACCESS",
+      "predicted": {
+        "BREACHED_VENDOR_HIGH_ACCESS": 32
+      }
+    },
+    {
+      "label": "VENDOR_UNDER_INVESTIGATION",
+      "predicted": {
+        "VENDOR_UNDER_INVESTIGATION": 20
+      }
+    },
+    {
+      "label": "EXPIRED_CERTIFICATION",
+      "predicted": {
+        "EXPIRED_CERTIFICATION": 72
+      }
+    },
+    {
+      "label": "HIGH_RISK_SCORE",
+      "predicted": {
+        "HIGH_RISK_SCORE": 48
+      }
+    },
+    {
+      "label": "RECENTLY_BREACHED_VENDOR",
+      "predicted": {
+        "RECENTLY_BREACHED_VENDOR": 40
+      }
+    },
+    {
+      "label": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+      "predicted": {
+        "EXPIRED_CERTIFICATION": 9,
+        "CONTRACT_EXPIRED_ACTIVE_ACCESS": 31
+      }
+    },
+    {
+      "label": "ELEVATED_RISK_VENDOR",
+      "predicted": {
+        "EXPIRED_CERTIFICATION": 15,
+        "CONTRACT_EXPIRED_ACTIVE_ACCESS": 16,
+        "ELEVATED_RISK_VENDOR": 37
+      }
+    },
+    {
+      "label": "NONE",
+      "predicted": {
+        "NONE": 80
+      }
+    }
+  ],
+  "top_errors": [
+    {
+      "vendor_id": "V0005",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-02-08 but FullAdmin access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0012",
+      "predicted": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "score": 27
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 68 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0018",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-02-22 but Read access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0038",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 69 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0042",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 80 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0047",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-01-16 but FullAdmin access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0055",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-05-09 but ReadWrite access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0077",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 71 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0085",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-04-25 but Read access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0104",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 73 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0105",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-01-13 but ReadWrite access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0110",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "explanation": "Contract ended 2026-03-12 but ReadWrite access still provisioned."
+      }
+    },
+    {
+      "vendor_id": "V0118",
+      "predicted": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "score": 25
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 68 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0121",
+      "predicted": {
+        "anomaly_type": "EXPIRED_CERTIFICATION",
+        "severity": "HIGH",
+        "score": 70
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 67 sits in elevated band (65\u201380); increased monitoring."
+      }
+    },
+    {
+      "vendor_id": "V0124",
+      "predicted": {
+        "anomaly_type": "CONTRACT_EXPIRED_ACTIVE_ACCESS",
+        "severity": "MEDIUM",
+        "score": 42
+      },
+      "actual": {
+        "anomaly_type": "ELEVATED_RISK_VENDOR",
+        "severity": "LOW",
+        "explanation": "Preliminary risk 65 sits in elevated band (65\u201380); increased monitoring."
+      }
+    }
+  ],
+  "rubric_pass": {
+    "anomaly_accuracy_>=_0.80": true,
+    "critical_recall_>=_0.95": true,
+    "high_recall_>=_0.80": true,
+    "binary_f1_>=_0.85": true
+  }
+}

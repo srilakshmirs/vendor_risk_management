@@ -14,7 +14,7 @@ from . import __version__
 from .config import settings
 from .db import init_db
 from .logging_config import configure_logging, get_logger
-from .routers import health, llm_info, vendors
+from .routers import health, llm_info, risk, vendors, contracts
 
 configure_logging()
 log = get_logger(__name__)
@@ -69,6 +69,8 @@ async def request_context(request: Request, call_next):
 app.include_router(health.router)
 app.include_router(llm_info.router)
 app.include_router(vendors.router)
+app.include_router(risk.router)
+app.include_router(contracts.router)
 
 
 @app.get("/", tags=["meta"])

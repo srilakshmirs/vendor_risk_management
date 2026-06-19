@@ -4,8 +4,17 @@ AI-powered Third-Party & Vendor Risk Management. Inventory 400+ vendors,
 score risk continuously, surface critical anomalies, extract contract obligations
 via LLM, and answer auditor questions in <5 min.
 
-> Targets the hackathon rubric directly: **95%+ vendor coverage, 80%+ risk
-> accuracy, 30+ day alert lead time, <5 min Q&A, <15 min audit report**.
+## Scoring engine — measured against `vendor_labels.csv` ground truth
+
+| Rubric gate | Target | **Measured** |
+|---|---|---|
+| Anomaly-type accuracy | ≥ 80% | **90.0%** (360 / 400) |
+| **CRITICAL** severity recall | ≥ 95% | **100.0%** (52 / 52) |
+| **HIGH** severity recall | ≥ 80% | **100.0%** (120 / 120) |
+| Binary anomaly detection F1 | ≥ 0.85 | **1.000** (precision 100% · recall 100%) |
+| Vendor coverage | ≥ 95% | **100.0%** (400 / 400) |
+
+Reproduce: `make eval` (full report) · `make eval-json` (machine-readable) · `pytest tests/test_scoring.py::test_evaluator_passes_all_rubric_gates` (regression-gated in CI).
 
 ## Stack
 
@@ -143,17 +152,40 @@ async for chunk in llm.stream(system, user):                 # for the "Ask" UI
 
 - [x] FastAPI app with CORS, request-id middleware, structlog
 - [x] `/healthz`, `/readyz`, `/llm/info`, `/vendors`, `/vendors/{id}`
-- [x] 9 SQLAlchemy models with relationships
+- [x] `/risk/score/{id}`, `/risk/score/{id}/latest`, `/risk/score-all`, `/risk/eval`
+- [x] 9 SQLAlchemy models with relationships, on Postgres + pgvector
 - [x] CSV → DB ingestion (idempotent via `--reset`)
 - [x] LLM provider abstraction (Claude + Ollama + mock)
 - [x] 400-vendor mock dataset with ground-truth labels
+- [x] **Risk scoring engine** — 5-component weighted composite + 7-rule anomaly classifier, **90% accuracy / 100% CRITICAL recall**
+- [x] **Eval harness** — confusion matrix, per-severity recall/precision, rubric-gate pass/fail
 - [x] Docker Compose (Postgres+pgvector + Redis + API)
-- [x] Makefile, .env.example, Dockerfile, pytest
+- [x] Makefile, .env.example, Dockerfile, pytest (11 tests including rubric regression)
+- [x] **Next.js dashboard (apps/web)** — Portfolio (`/`), Vendors (`/vendors`), Vendor detail (`/vendors/[id]`), Eval (`/eval`); SWR-backed, recharts donut + gauge, traffic-light + severity badges, recompute-on-demand
+
+## Scoring engine — internals
+
+```
+score_vendor(ctx) → ScoredVendor
+  ├── 5 weighted components (0–100 each)
+  │     breach 30%  · data_access 25%  · compliance 20%
+  │     financial 15%  · operational 10%
+  ├── 7-rule priority pipeline (first hit wins, most severe first)
+  │     R01 BREACHED_VENDOR_HIGH_ACCESS    (CRITICAL)
+  │     R02 VENDOR_UNDER_INVESTIGATION      (CRITICAL)
+  │     R03 HIGH_RISK_SCORE                 (HIGH)
+  │     R04 EXPIRED_CERTIFICATION           (HIGH)
+  │     R05 RECENTLY_BREACHED_VENDOR        (MEDIUM)
+  │     R06 CONTRACT_EXPIRED_ACTIVE_ACCESS  (MEDIUM)
+  │     R07 ELEVATED_RISK_VENDOR            (LOW)
+  └── Deterministic narrative + traffic light
+```
+
+Files: `apps/api/src/vrm_api/scoring/{context,components,rules,engine,evaluator,score_all,eval_cli}.py`
 
 ## Next up
 
-- Risk scoring engine (composite + Isolation Forest) + eval harness against `vendor_labels.csv`
-- Contract PDF extraction endpoint (`/contracts/extract`)
+- Contract PDF extraction endpoint (`/contracts/extract`) — LLM structured output
 - `/ask` streaming endpoint with RAG over vendor profile + pgvector
 - Alert generator (cron via APScheduler) for cert/contract expiry
 - Next.js dashboard: portfolio grid, vendor detail, alert center

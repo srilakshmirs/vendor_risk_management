@@ -1,0 +1,120 @@
+// Types mirror the FastAPI Pydantic schemas in apps/api/src/vrm_api/schemas/.
+// Kept hand-written for speed — swap to openapi-typescript if the contract churns.
+
+export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "NONE";
+export type TrafficLight = "Red" | "Yellow" | "Green";
+
+export type AnomalyType =
+  | "BREACHED_VENDOR_HIGH_ACCESS"
+  | "VENDOR_UNDER_INVESTIGATION"
+  | "EXPIRED_CERTIFICATION"
+  | "HIGH_RISK_SCORE"
+  | "RECENTLY_BREACHED_VENDOR"
+  | "CONTRACT_EXPIRED_ACTIVE_ACCESS"
+  | "ELEVATED_RISK_VENDOR"
+  | "NONE";
+
+export interface Vendor {
+  id: number;
+  vendor_id: string;
+  name: string;
+  vendor_type: string;
+  country: string;
+  criticality: string;
+  annual_spend_usd: number;
+  preliminary_risk_score: number;
+  under_investigation: boolean;
+  status: string;
+}
+
+export interface Certification {
+  cert_type: string;
+  status: string;
+  expiry_date: string | null;
+}
+
+export interface DataAccess {
+  access_level: string;
+  data_classes: string;
+  systems_accessed: string;
+  gdpr_compliant: boolean;
+}
+
+export interface RiskAssessment {
+  score: number;
+  traffic_light: TrafficLight;
+  severity: Severity;
+  anomaly_type: AnomalyType | null;
+  narrative: string | null;
+  components: Record<string, unknown>;
+  triggered_rules: string[];
+  created_at: string;
+}
+
+export interface VendorDetail extends Vendor {
+  primary_contact_email: string | null;
+  last_assessment_date: string | null;
+  financial_health_score: number;
+  certifications: Certification[];
+  data_access: DataAccess[];
+  latest_risk: RiskAssessment | null;
+}
+
+export interface VendorListResponse {
+  total: number;
+  items: Vendor[];
+}
+
+export interface ScoredVendor {
+  vendor_id: string;
+  score: number;
+  traffic_light: TrafficLight;
+  severity: Severity;
+  anomaly_type: AnomalyType | null;
+  components: Record<string, number>;
+  weighted_components: Record<string, number>;
+  triggered_rules: string[];
+  rule_hits: Array<{
+    rule_id: string;
+    anomaly_type: string;
+    severity: string;
+    rationale: string;
+  }>;
+  narrative: string;
+  reasons: Record<string, string[]>;
+  model_version: string;
+}
+
+export interface EvalReport {
+  model_version: string;
+  total: number;
+  anomaly_accuracy: number;
+  severity_accuracy: number;
+  binary_recall: number;
+  binary_precision: number;
+  binary_f1: number;
+  recall_by_severity: Record<Severity, number>;
+  precision_by_severity: Record<Severity, number>;
+  support_by_severity: Record<Severity, number>;
+  rubric_pass: Record<string, boolean>;
+}
+
+export interface LLMInfo {
+  provider: string;
+  model: string;
+  available: boolean;
+  detail: string | null;
+}
+
+export interface VendorListParams {
+  q?: string;
+  vendor_type?: string;
+  country?: string;
+  criticality?: string;
+  min_risk?: number;
+  max_risk?: number;
+  under_investigation?: boolean;
+  sort?: string;
+  limit?: number;
+  offset?: number;
+}

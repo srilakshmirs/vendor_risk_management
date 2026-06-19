@@ -19,6 +19,9 @@ dependencies = [
     "python-multipart>=0.0.12",
     "apscheduler>=3.10",
     "tenacity>=9.0",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "pypdf>=6.13.3",
 ]
 
 [project.optional-dependencies]
