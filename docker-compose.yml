@@ -1,0 +1,65 @@
+# Bring up the full stack: Postgres+pgvector, Redis, FastAPI.
+# `docker compose up --build`  →  API on :8000, Postgres on :5432, Redis on :6379
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: vrm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vrm
+      POSTGRES_PASSWORD: vrm
+      POSTGRES_DB: vrm
+    ports:
+      - "5432:5432"
+    volumes:
+      - vrm_pg_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vrm -d vrm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: vrm-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: vrm-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+psycopg://vrm:vrm@postgres:5432/vrm
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # `host.docker.internal` lets the API reach Ollama running on the Mac host
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/srv/data:ro
+      - ./apps/api/uploads:/srv/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  vrm_pg_data:

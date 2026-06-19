@@ -34,3 +34,31 @@ yarn-error.log*
 
 # ui
 dist/
+
+# ── Python / API ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local DB / uploads
+*.db
+*.sqlite
+*.sqlite3
+apps/api/vrm.db
+apps/api/uploads/
+
+# Env (keep .env.example)
+.env
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+logs/

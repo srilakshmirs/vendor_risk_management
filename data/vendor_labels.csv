@@ -1,0 +1,401 @@
+vendor_id,is_anomaly,anomaly_type,severity,expired_cert_flag,explanation
+V0001,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-05-09 but Read access still provisioned.
+V0002,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0003,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 89 exceeds 80/100 threshold.
+V0004,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 87 exceeds 80/100 threshold.
+V0005,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-02-08 but FullAdmin access still provisioned.
+V0006,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-03 but ReadWrite access still provisioned.
+V0007,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-07-06) but limited data scope.
+V0008,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0009,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0010,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 79 sits in elevated band (65–80); increased monitoring.
+V0011,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-11-10) but limited data scope.
+V0012,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0013,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,1,Active regulatory or security investigation reported.
+V0014,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0015,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0016,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0017,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0018,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-02-22 but Read access still provisioned.
+V0019,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PII.
+V0020,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PII.
+V0021,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 65 sits in elevated band (65–80); increased monitoring.
+V0022,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0023,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-04 but Read access still provisioned.
+V0024,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0025,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-03-08 (Critical); holds Financial with FullAdmin access.
+V0026,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes Financial.
+V0027,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-02-11) but limited data scope.
+V0028,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2026-02-25 (Critical); holds Financial with FullAdmin access.
+V0029,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0030,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0031,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 75 sits in elevated band (65–80); increased monitoring.
+V0032,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 72 sits in elevated band (65–80); increased monitoring.
+V0033,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-06-10 but Read access still provisioned.
+V0034,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-08-04) but limited data scope.
+V0035,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0036,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0037,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0038,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 69 sits in elevated band (65–80); increased monitoring.
+V0039,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PCI.
+V0040,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-02-27 but FullAdmin access still provisioned.
+V0041,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0042,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0043,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-21 but ReadWrite access still provisioned.
+V0044,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0045,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-09-16 (Critical); holds PII with ReadWrite access.
+V0046,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0047,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-01-16 but FullAdmin access still provisioned.
+V0048,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0049,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0050,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 88 exceeds 80/100 threshold.
+V0051,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-08-25) but limited data scope.
+V0052,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes Financial.
+V0053,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0054,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0055,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-05-09 but ReadWrite access still provisioned.
+V0056,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 82 exceeds 80/100 threshold.
+V0057,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-02-05 but Read access still provisioned.
+V0058,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0059,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0060,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0061,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0062,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0063,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2025-07-25 (High); holds PII with ReadWrite access.
+V0064,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes Financial.
+V0065,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-09-23) but limited data scope.
+V0066,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-07-27 (Critical); holds PII with ReadWrite access.
+V0067,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0068,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0069,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 82 exceeds 80/100 threshold.
+V0070,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0071,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-19 but FullAdmin access still provisioned.
+V0072,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0073,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-10-02 (High); holds Financial with FullAdmin access.
+V0074,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0075,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0076,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0077,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 71 sits in elevated band (65–80); increased monitoring.
+V0078,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0079,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0080,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0081,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 94 exceeds 80/100 threshold.
+V0082,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0083,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0084,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-04-20 but ReadWrite access still provisioned.
+V0085,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-04-25 but Read access still provisioned.
+V0086,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0087,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0088,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-01-13) but limited data scope.
+V0089,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,1,Active regulatory or security investigation reported.
+V0090,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-05-14) but limited data scope.
+V0091,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0092,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-01-11 but ReadWrite access still provisioned.
+V0093,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0094,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 96 exceeds 80/100 threshold.
+V0095,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 94 exceeds 80/100 threshold.
+V0096,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0097,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0098,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0099,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 67 sits in elevated band (65–80); increased monitoring.
+V0100,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 99 exceeds 80/100 threshold.
+V0101,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PCI.
+V0102,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 99 exceeds 80/100 threshold.
+V0103,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0104,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 73 sits in elevated band (65–80); increased monitoring.
+V0105,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-01-13 but ReadWrite access still provisioned.
+V0106,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-12-26) but limited data scope.
+V0107,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-10-31 (Critical); holds PHI with ReadWrite access.
+V0108,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-28 but Read access still provisioned.
+V0109,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 93 exceeds 80/100 threshold.
+V0110,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-03-12 but ReadWrite access still provisioned.
+V0111,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0112,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0113,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-02-28 but ReadWrite access still provisioned.
+V0114,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0115,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0116,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0117,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-09-08 (High); holds Financial with FullAdmin access.
+V0118,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0119,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0120,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0121,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 67 sits in elevated band (65–80); increased monitoring.
+V0122,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-03-02 (Critical); holds PHI with ReadWrite access.
+V0123,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0124,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 65 sits in elevated band (65–80); increased monitoring.
+V0125,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0126,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 83 exceeds 80/100 threshold.
+V0127,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-03-13) but limited data scope.
+V0128,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0129,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-01-04 (High); holds Financial with ReadWrite access.
+V0130,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-04-12 but ReadWrite access still provisioned.
+V0131,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0132,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-02-25 but ReadWrite access still provisioned.
+V0133,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 74 sits in elevated band (65–80); increased monitoring.
+V0134,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0135,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0136,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0137,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 88 exceeds 80/100 threshold.
+V0138,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0139,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-12-03) but limited data scope.
+V0140,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0141,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0142,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0143,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-04-01) but limited data scope.
+V0144,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2026-03-11 (Critical); holds PII with ReadWrite access.
+V0145,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0146,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0147,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0148,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-08-20) but limited data scope.
+V0149,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0150,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0151,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 91 exceeds 80/100 threshold.
+V0152,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 65 sits in elevated band (65–80); increased monitoring.
+V0153,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,1,Active regulatory or security investigation reported.
+V0154,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0155,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 94 exceeds 80/100 threshold.
+V0156,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0157,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-11-09) but limited data scope.
+V0158,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 81 exceeds 80/100 threshold.
+V0159,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 86 exceeds 80/100 threshold.
+V0160,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0161,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-29 but FullAdmin access still provisioned.
+V0162,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-10-21) but limited data scope.
+V0163,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 79 sits in elevated band (65–80); increased monitoring.
+V0164,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 74 sits in elevated band (65–80); increased monitoring.
+V0165,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0166,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 88 exceeds 80/100 threshold.
+V0167,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-12-20) but limited data scope.
+V0168,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0169,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-09-13 (Critical); holds PII with ReadWrite access.
+V0170,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0171,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-09-13) but limited data scope.
+V0172,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0173,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 70 sits in elevated band (65–80); increased monitoring.
+V0174,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-05-07 (High); holds PHI with ReadWrite access.
+V0175,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0176,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 73 sits in elevated band (65–80); increased monitoring.
+V0177,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-09-24) but limited data scope.
+V0178,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 74 sits in elevated band (65–80); increased monitoring.
+V0179,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 93 exceeds 80/100 threshold.
+V0180,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 74 sits in elevated band (65–80); increased monitoring.
+V0181,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 72 sits in elevated band (65–80); increased monitoring.
+V0182,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes Financial.
+V0183,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0184,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 70 sits in elevated band (65–80); increased monitoring.
+V0185,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0186,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-12-12 (Critical); holds Financial with FullAdmin access.
+V0187,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0188,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0189,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0190,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-04-21 but Read access still provisioned.
+V0191,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 69 sits in elevated band (65–80); increased monitoring.
+V0192,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 93 exceeds 80/100 threshold.
+V0193,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0194,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0195,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-08-21) but limited data scope.
+V0196,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0197,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0198,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0199,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0200,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 73 sits in elevated band (65–80); increased monitoring.
+V0201,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0202,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 75 sits in elevated band (65–80); increased monitoring.
+V0203,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-03-11 but ReadWrite access still provisioned.
+V0204,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-14 but Read access still provisioned.
+V0205,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0206,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0207,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0208,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0209,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 89 exceeds 80/100 threshold.
+V0210,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-07-15) but limited data scope.
+V0211,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 72 sits in elevated band (65–80); increased monitoring.
+V0212,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-09-16) but limited data scope.
+V0213,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 72 sits in elevated band (65–80); increased monitoring.
+V0214,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 72 sits in elevated band (65–80); increased monitoring.
+V0215,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-03-27 (High); holds Financial with FullAdmin access.
+V0216,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-02-20) but limited data scope.
+V0217,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 93 exceeds 80/100 threshold.
+V0218,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-10-15) but limited data scope.
+V0219,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-08-01 (Critical); holds PII with ReadWrite access.
+V0220,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2025-12-16 (Critical); holds Financial with ReadWrite access.
+V0221,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0222,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-04-06 but FullAdmin access still provisioned.
+V0223,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-03-06 (Critical); holds PII with ReadWrite access.
+V0224,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0225,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 76 sits in elevated band (65–80); increased monitoring.
+V0226,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-03-28) but limited data scope.
+V0227,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-01 but Read access still provisioned.
+V0228,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-01-17 but ReadWrite access still provisioned.
+V0229,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0230,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0231,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-04-08 (High); holds PII with ReadWrite access.
+V0232,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 69 sits in elevated band (65–80); increased monitoring.
+V0233,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0234,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 98 exceeds 80/100 threshold.
+V0235,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2026-02-21 (Critical); holds PHI with FullAdmin access.
+V0236,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0237,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 76 sits in elevated band (65–80); increased monitoring.
+V0238,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 73 sits in elevated band (65–80); increased monitoring.
+V0239,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-01-31) but limited data scope.
+V0240,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0241,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0242,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0243,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0244,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0245,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0246,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 86 exceeds 80/100 threshold.
+V0247,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0248,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 88 exceeds 80/100 threshold.
+V0249,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-06-14 but ReadWrite access still provisioned.
+V0250,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0251,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 96 exceeds 80/100 threshold.
+V0252,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0253,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2026-04-26 (Critical); holds Financial with ReadWrite access.
+V0254,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-02-28 but FullAdmin access still provisioned.
+V0255,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 87 exceeds 80/100 threshold.
+V0256,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PCI.
+V0257,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 79 sits in elevated band (65–80); increased monitoring.
+V0258,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 76 sits in elevated band (65–80); increased monitoring.
+V0259,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2025-10-27 (Critical); holds Financial with FullAdmin access.
+V0260,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0261,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0262,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-01-02 but FullAdmin access still provisioned.
+V0263,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0264,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0265,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0266,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 76 sits in elevated band (65–80); increased monitoring.
+V0267,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0268,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-03-02 (High); holds PHI with FullAdmin access.
+V0269,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 99 exceeds 80/100 threshold.
+V0270,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-11 but ReadWrite access still provisioned.
+V0271,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-04-12) but limited data scope.
+V0272,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-08-30) but limited data scope.
+V0273,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0274,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0275,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0276,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0277,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0278,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-01-15 (Critical); holds PII with FullAdmin access.
+V0279,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,1,Active regulatory or security investigation reported.
+V0280,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 76 sits in elevated band (65–80); increased monitoring.
+V0281,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 67 sits in elevated band (65–80); increased monitoring.
+V0282,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0283,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0284,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0285,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-10-16) but limited data scope.
+V0286,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2025-12-31 but Read access still provisioned.
+V0287,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 89 exceeds 80/100 threshold.
+V0288,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0289,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0290,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 82 exceeds 80/100 threshold.
+V0291,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0292,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0293,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PII.
+V0294,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-03-05 but FullAdmin access still provisioned.
+V0295,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-01-01) but limited data scope.
+V0296,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 73 sits in elevated band (65–80); increased monitoring.
+V0297,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0298,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 71 sits in elevated band (65–80); increased monitoring.
+V0299,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0300,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0301,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0302,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 85 exceeds 80/100 threshold.
+V0303,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-10-05) but limited data scope.
+V0304,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 96 exceeds 80/100 threshold.
+V0305,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0306,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0307,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-05-18 (Critical); holds Financial with FullAdmin access.
+V0308,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 87 exceeds 80/100 threshold.
+V0309,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0310,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0311,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 95 exceeds 80/100 threshold.
+V0312,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0313,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-06-08 but ReadWrite access still provisioned.
+V0314,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0315,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0316,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 72 sits in elevated band (65–80); increased monitoring.
+V0317,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0318,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 79 sits in elevated band (65–80); increased monitoring.
+V0319,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0320,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 95 exceeds 80/100 threshold.
+V0321,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes Financial.
+V0322,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-02-16) but limited data scope.
+V0323,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-12-17) but limited data scope.
+V0324,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0325,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2025-11-06) but limited data scope.
+V0326,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-06-17 but ReadWrite access still provisioned.
+V0327,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0328,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0329,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0330,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0331,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0332,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 84 exceeds 80/100 threshold.
+V0333,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0334,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-02-21 (Critical); holds PHI with ReadWrite access.
+V0335,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,1,Active regulatory or security investigation reported.
+V0336,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0337,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0338,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-10-03) but limited data scope.
+V0339,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 69 sits in elevated band (65–80); increased monitoring.
+V0340,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0341,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 82 exceeds 80/100 threshold.
+V0342,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 79 sits in elevated band (65–80); increased monitoring.
+V0343,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0344,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-03-02) but limited data scope.
+V0345,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0346,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0347,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,1,Contract ended 2026-01-07 but Read access still provisioned.
+V0348,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2026-02-10 (Critical); holds PII with FullAdmin access.
+V0349,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 90 exceeds 80/100 threshold.
+V0350,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0351,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2026-01-23) but limited data scope.
+V0352,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-07-09) but limited data scope.
+V0353,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0354,1,RECENTLY_BREACHED_VENDOR,MEDIUM,1,Breach within 12mo (2026-04-07) but limited data scope.
+V0355,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0356,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0357,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2025-12-19) but limited data scope.
+V0358,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes Financial.
+V0359,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0360,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0361,1,RECENTLY_BREACHED_VENDOR,MEDIUM,0,Breach within 12mo (2026-01-11) but limited data scope.
+V0362,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0363,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0364,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes PCI.
+V0365,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2025-10-10 (Critical); holds Financial with FullAdmin access.
+V0366,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 97 exceeds 80/100 threshold.
+V0367,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 77 sits in elevated band (65–80); increased monitoring.
+V0368,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-06-12 but FullAdmin access still provisioned.
+V0369,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0370,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2026-06-09 but FullAdmin access still provisioned.
+V0371,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0372,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0373,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0374,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0375,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes PCI.
+V0376,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 67 sits in elevated band (65–80); increased monitoring.
+V0377,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2026-05-30 (Critical); holds Financial with ReadWrite access.
+V0378,1,ELEVATED_RISK_VENDOR,LOW,1,Preliminary risk 69 sits in elevated band (65–80); increased monitoring.
+V0379,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 80 sits in elevated band (65–80); increased monitoring.
+V0380,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0381,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0382,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0383,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2026-04-02 (Critical); holds Financial with ReadWrite access.
+V0384,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,0,Vendor breached on 2025-08-17 (Critical); holds Financial with FullAdmin access.
+V0385,1,CONTRACT_EXPIRED_ACTIVE_ACCESS,MEDIUM,0,Contract ended 2025-12-22 but ReadWrite access still provisioned.
+V0386,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 68 sits in elevated band (65–80); increased monitoring.
+V0387,1,VENDOR_UNDER_INVESTIGATION,CRITICAL,0,Active regulatory or security investigation reported.
+V0388,1,ELEVATED_RISK_VENDOR,LOW,0,Preliminary risk 76 sits in elevated band (65–80); increased monitoring.
+V0389,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0390,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0391,1,EXPIRED_CERTIFICATION,HIGH,1,SOC2 certification expired while vendor still processes Financial.
+V0392,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0393,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0394,1,EXPIRED_CERTIFICATION,HIGH,1,PCI certification expired while vendor still processes Financial.
+V0395,1,HIGH_RISK_SCORE,HIGH,0,Preliminary risk score 95 exceeds 80/100 threshold.
+V0396,1,HIGH_RISK_SCORE,HIGH,1,Preliminary risk score 95 exceeds 80/100 threshold.
+V0397,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
+V0398,1,BREACHED_VENDOR_HIGH_ACCESS,CRITICAL,1,Vendor breached on 2025-09-10 (Critical); holds PHI with FullAdmin access.
+V0399,1,EXPIRED_CERTIFICATION,HIGH,1,ISO certification expired while vendor still processes PII.
+V0400,0,NONE,NONE,0,No anomaly detected; vendor within normal risk bands.
