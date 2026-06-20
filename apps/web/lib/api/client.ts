@@ -1,7 +1,15 @@
 import type {
+  AlertCounts,
+  AlertListParams,
+  AlertListResponse,
+  AlertRow,
+  AlertStatus,
+  BreachPollResult,
+  EnhanceResponse,
   EvalReport,
   LLMInfo,
   ScoredVendor,
+  SweepResult,
   VendorDetail,
   VendorListParams,
   VendorListResponse,
@@ -72,6 +80,12 @@ export const api = {
       { method: "POST" },
     ),
 
+  enhanceNarrative: (vendorId: string, persist = true) =>
+    request<EnhanceResponse>(
+      `/risk/score/${encodeURIComponent(vendorId)}/enhance${qs({ persist })}`,
+      { method: "POST" },
+    ),
+
   latestRisk: (vendorId: string) =>
     request<ScoredVendor | null>(
       `/risk/score/${encodeURIComponent(vendorId)}/latest`,
@@ -94,6 +108,30 @@ export const api = {
       isFormData: true,
     });
   },
+
+  // ── Alerts ──
+  listAlerts: (params: AlertListParams = {}) =>
+    request<AlertListResponse>(`/alerts${qs(params as Record<string, unknown>)}`),
+
+  alertCounts: () => request<AlertCounts>("/alerts/count"),
+
+  updateAlert: (id: number, status: AlertStatus) =>
+    request<AlertRow>(`/alerts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  alertsSweep: () =>
+    request<SweepResult>("/alerts/sweep", { method: "POST" }),
+
+  breachPoll: () =>
+    request<BreachPollResult>("/alerts/breach-poll", { method: "POST" }),
+
+  // ── Audit pack PDF ──
+  // Returns a direct URL so the browser handles the download natively
+  // (preserves Content-Disposition filename + no in-memory blob round-trip).
+  auditPackUrl: (vendorCode: string) =>
+    `${API_BASE}/audit/pack/${encodeURIComponent(vendorCode)}`,
 };
 
 export { ApiError };

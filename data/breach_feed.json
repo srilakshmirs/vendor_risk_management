@@ -1,0 +1,50 @@
+[
+  {
+    "source": "HIBP",
+    "vendor_id": "V0007",
+    "detected_at": "2026-06-18",
+    "severity": "Critical",
+    "data_exposed": ["PII", "Email", "Password hash"],
+    "summary": "Password database dump posted on a dark-web forum; 2.4M records linked to vendor's customer portal."
+  },
+  {
+    "source": "CISA-KEV",
+    "vendor_id": "V0023",
+    "detected_at": "2026-06-17",
+    "severity": "High",
+    "data_exposed": ["PII"],
+    "summary": "Active exploitation of CVE-2026-0421 in vendor's authentication SDK — added to CISA Known Exploited Vulnerabilities list."
+  },
+  {
+    "source": "HIBP",
+    "vendor_id": "V0145",
+    "detected_at": "2026-06-15",
+    "severity": "Medium",
+    "data_exposed": ["Email", "Internal"],
+    "summary": "Phishing campaign successful against vendor staff; limited internal repo access leaked."
+  },
+  {
+    "source": "news-feed",
+    "vendor_id": "V0042",
+    "detected_at": "2026-06-12",
+    "severity": "High",
+    "data_exposed": ["Financial", "PII"],
+    "summary": "Reuters: vendor confirmed an incident affecting EU customer financial records; 72-hour GDPR notification clock started."
+  },
+  {
+    "source": "self-disclosed",
+    "vendor_id": "V0199",
+    "detected_at": "2026-06-10",
+    "severity": "Low",
+    "data_exposed": ["Internal"],
+    "summary": "Vendor self-reported a logging-system misconfiguration that briefly exposed internal metrics; no customer data affected."
+  },
+  {
+    "source": "HIBP",
+    "vendor_id": "V0276",
+    "detected_at": "2026-06-08",
+    "severity": "Critical",
+    "data_exposed": ["PHI", "PII"],
+    "summary": "Healthcare ransomware affiliate posted vendor-attributed sample of 800k patient records on leak site."
+  }
+]

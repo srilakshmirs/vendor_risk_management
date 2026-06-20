@@ -64,6 +64,9 @@ class VendorContext:
     # Audit
     last_assessment_date: date | None = None
 
+    # Geography (kept last for dataclass field-ordering rules — must come after non-defaults)
+    country: str = ""             # ISO country code (e.g. "FR", "US")
+
     # ── Derived helpers ─────────────────────────────────────────────
     @property
     def has_sensitive_data(self) -> bool:
@@ -120,6 +123,7 @@ def vendor_context_from_row(row: dict[str, Any]) -> VendorContext:
         under_investigation=str(row.get("under_investigation", "No")).strip().lower() in {"yes", "true", "1"},
         financial_health_score=int(row.get("financial_health_score") or 70),
         preliminary_risk_score=int(row.get("preliminary_risk_score") or 0),
+        country=row.get("country", ""),
         access_level=row.get("data_access_level", "None"),
         data_classes=_parse_classes(row.get("data_classes", "")),
         systems_accessed=_parse_tuple(row.get("systems_accessed", "")),
@@ -167,6 +171,7 @@ def vendor_context_from_orm(vendor: Any) -> VendorContext:
         under_investigation=vendor.under_investigation,
         financial_health_score=vendor.financial_health_score,
         preliminary_risk_score=vendor.preliminary_risk_score,
+        country=vendor.country or "",
         access_level=access_level,
         data_classes=data_classes,
         systems_accessed=systems,

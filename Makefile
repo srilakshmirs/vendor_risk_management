@@ -1,8 +1,10 @@
 # ───────────────────────────────────────────────────────────────────
 # VRM Intelligence — orchestration commands
 # ───────────────────────────────────────────────────────────────────
-.PHONY: help install api web docs dev mock-data seed reset llm-info \
-        score-all eval eval-json risk-of \
+.PHONY: help install api web docs dev mock-data sample-contracts seed reset llm-info \
+        score-all eval eval-json risk-of ask-reindex ask \
+        alerts-sweep breach-poll alerts-count audit-pdf enhance \
+        demo-reset \
         test lint format up down logs clean
 
 API_DIR := apps/api
@@ -20,6 +22,9 @@ install:  ## Install JS (bun) + Python (uv) deps
 # ── Data ──
 mock-data:  ## Regenerate vendor_registry.csv + vendor_labels.csv (400 vendors, seed=42)
 	uv run $(DATA_DIR)/generate_mock_data.py
+
+sample-contracts:  ## Regenerate data/contracts/sample-msa.pdf + sample-msa-risky.pdf
+	uv run $(DATA_DIR)/contracts/generate_sample_contracts.py
 
 seed:  ## Load CSV into DB (drops + recreates tables)
 	cd $(API_DIR) && uv run python -m vrm_api.seeds.ingest_csv --reset
@@ -58,6 +63,70 @@ eval-json:  ## Same eval, JSON output to docs/eval_report.json
 
 risk-of:  ## Show the latest risk score for a vendor: make risk-of VID=V0100
 	@curl -s "http://localhost:8000/risk/score/$(VID)/latest" | python3 -m json.tool
+
+# ── RAG / Ask ──
+ask-reindex:  ## Build the embeddings table from current vendor data
+	cd $(API_DIR) && uv run python -m vrm_api.rag.indexer
+
+ask:  ## One-shot ask via /ask endpoint: make ask Q="Which vendors are CRITICAL?"
+	@curl -s -X POST "http://localhost:8000/ask" \
+	   -H "Content-Type: application/json" \
+	   -d "{\"question\": \"$(Q)\", \"k\": 8}" | python3 -m json.tool
+
+# ── Alerts + continuous monitoring ──
+alerts-sweep:  ## Manually run cert/contract expiry sweep
+	cd $(API_DIR) && uv run python -m vrm_api.services.expiry_sweep
+
+breach-poll:  ## Manually poll the mock breach feed (also rescores affected vendors)
+	cd $(API_DIR) && uv run python -m vrm_api.services.breach_feed
+
+alerts-count:  ## Show open / by-severity / by-type alert counts
+	@curl -s http://localhost:8000/alerts/count | python3 -m json.tool
+
+# ── Audit pack PDF ──
+audit-pdf:  ## Download a vendor audit pack PDF: make audit-pdf VID=V0007
+	@mkdir -p docs/exports
+	@curl -fsS -OJ "http://localhost:8000/audit/pack/$(VID)" --output-dir docs/exports
+	@ls -lh docs/exports/audit-$(VID)-*.pdf | tail -1
+
+enhance:  ## LLM-enhance the risk narrative for a vendor: make enhance VID=V0276
+	@curl -fsS -X POST "http://localhost:8000/risk/score/$(VID)/enhance" | python3 -m json.tool
+
+# ── Demo readiness ──
+# Bullet-proof one-command reset before the live demo. Idempotent; safe to re-run.
+# Destructive: wipes & re-seeds vendors. Runs without the FastAPI process being up.
+# Hero vendors (V0276 ransomware + V0007 password dump) get pre-enhanced narratives
+# so the first click on either one already shows the AI text without the wait.
+HERO_VENDORS ?= V0276 V0007
+
+demo-reset:  ## Full demo prep — wipes data, re-seeds, scores, indexes, alerts, breaches, enhances hero vendors
+	@echo ""
+	@echo "==> 1/7  Ensuring Postgres is up..."
+	@docker compose up -d postgres >/dev/null 2>&1 || echo "    (docker compose unavailable — assuming Postgres is reachable on :5432)"
+	@printf "    "; until docker exec vrm-postgres pg_isready -U vrm -d vrm >/dev/null 2>&1; do printf "."; sleep 1; done; echo " ready"
+	@echo ""
+	@echo "==> 2/7  Seeding 400 vendors (drops + recreates tables)..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.seeds.ingest_csv --reset 2>&1 | grep -E "vendors|certifications|contracts|breaches|data_access" | tail -6
+	@echo ""
+	@echo "==> 3/7  Scoring all vendors (rules-v1.1)..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.scoring.score_all --replace 2>&1 | grep -E "vendors|assessments" | tail -3
+	@echo ""
+	@echo "==> 4/7  Reindexing embeddings for /ask..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.rag.indexer 2>&1 | grep -E "vendors|chunks" | tail -3
+	@echo ""
+	@echo "==> 5/7  Sweeping cert/contract expiries (60/30/7 day alerts)..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.services.expiry_sweep 2>&1 | grep -E "considered|created|skipped" | tail -3
+	@echo ""
+	@echo "==> 6/7  Polling mock breach feed (auto-rescores affected vendors)..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.services.breach_feed 2>&1 | grep -E "entries|ingested|rescored" | tail -3
+	@echo ""
+	@echo "==> 7/7  LLM-enhancing hero vendor narratives ($(HERO_VENDORS)) — slow on Ollama, fast on Claude..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.scoring.enhance_cli $(HERO_VENDORS) 2>&1 | grep -E "✓|✗|Enhancing"
+	@echo ""
+	@echo "✅ Demo data ready."
+	@echo "   Hero vendors: $(HERO_VENDORS)"
+	@echo "   Try:  make api  +  make web  →  http://localhost:3000"
+	@echo "   Or test:  curl http://localhost:8000/alerts/count | python3 -m json.tool"
 
 # ── Quality ──
 test:  ## Run API tests

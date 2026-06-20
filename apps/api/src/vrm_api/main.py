@@ -14,7 +14,8 @@ from . import __version__
 from .config import settings
 from .db import init_db
 from .logging_config import configure_logging, get_logger
-from .routers import health, llm_info, risk, vendors, contracts
+from .routers import alerts, ask, audit, contracts, health, llm_info, risk, vendors
+from .services import scheduler as scheduler_service
 
 configure_logging()
 log = get_logger(__name__)
@@ -24,8 +25,12 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI):
     log.info("api_startup", environment=settings.environment, llm_provider=settings.llm_provider)
     init_db()
-    yield
-    log.info("api_shutdown")
+    scheduler_service.start()
+    try:
+        yield
+    finally:
+        scheduler_service.shutdown()
+        log.info("api_shutdown")
 
 
 app = FastAPI(
@@ -71,6 +76,9 @@ app.include_router(llm_info.router)
 app.include_router(vendors.router)
 app.include_router(risk.router)
 app.include_router(contracts.router)
+app.include_router(ask.router)
+app.include_router(alerts.router)
+app.include_router(audit.router)
 
 
 @app.get("/", tags=["meta"])

@@ -3,14 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { LayoutDashboard, ShieldAlert, FileSearch, Activity } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  FileSearch,
+  LayoutDashboard,
+  MessagesSquare,
+  ShieldAlert,
+} from "lucide-react";
 import { cn } from "../lib/cn";
 
 const NAV = [
   { href: "/", label: "Portfolio", icon: LayoutDashboard, exact: true },
   { href: "/vendors", label: "Vendors", icon: ShieldAlert },
+  { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/ask", label: "Ask", icon: MessagesSquare },
   { href: "/eval", label: "Model Eval", icon: Activity },
-  { href: "/audit", label: "Audit Pack", icon: FileSearch, disabled: true },
+  { href: "/audit", label: "Audit Pack", icon: FileSearch },
 ];
 
 export function Sidebar() {
@@ -32,20 +41,6 @@ export function Sidebar() {
             ? pathname === item.href
             : pathname?.startsWith(item.href);
           const Icon = item.icon;
-          if (item.disabled) {
-            return (
-              <div
-                key={item.href}
-                className="relative flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg text-zinc-400 dark:text-zinc-500 cursor-not-allowed"
-              >
-                <Icon className="size-4" />
-                <span>{item.label}</span>
-                <span className="ml-auto text-[9px] uppercase tracking-wider font-semibold bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                  soon
-                </span>
-              </div>
-            );
-          }
           return (
             <Link
               key={item.href}

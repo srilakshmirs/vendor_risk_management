@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { use, useState } from "react";
 import {
@@ -8,6 +9,7 @@ import {
   Calendar,
   CircleCheck,
   CircleX,
+  FileDown,
   Loader2,
   Mail,
   RefreshCw,
@@ -38,8 +40,22 @@ export default function VendorDetailPage({
   const { data: latestRisk, mutate: refreshLatest } = useLatestRisk(vendorId);
   const { mutate } = useSWRConfig();
   const [recomputing, setRecomputing] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedContract, setExtractedContract] = useState<any>(null);
+
+  const enhance = async () => {
+    setEnhancing(true);
+    try {
+      await api.enhanceNarrative(vendorId, true);
+      await refreshLatest();
+    } catch (err) {
+      console.error(err);
+      alert("LLM enhancement failed. Check the API logs.");
+    } finally {
+      setEnhancing(false);
+    }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -125,17 +141,30 @@ export default function VendorDetailPage({
             <ArrowLeft className="size-4" />
             All vendors
           </Link>
-          <button
-            onClick={recompute}
-            disabled={recomputing}
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800",
-              recomputing && "opacity-60 cursor-wait",
-            )}
-          >
-            <RefreshCw className={cn("size-4", recomputing && "animate-spin")} />
-            Recompute risk
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href={api.auditPackUrl(vendorId)}
+              download
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md text-white shadow-sm shadow-red-500/20",
+                "bg-linear-to-br from-red-500 to-amber-500 hover:opacity-95",
+              )}
+            >
+              <FileDown className="size-4" />
+              Export Audit Pack
+            </a>
+            <button
+              onClick={recompute}
+              disabled={recomputing}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800",
+                recomputing && "opacity-60 cursor-wait",
+              )}
+            >
+              <RefreshCw className={cn("size-4", recomputing && "animate-spin")} />
+              Recompute risk
+            </button>
+          </div>
         </div>
 
         {/* Hero row: gauge + breakdown + narrative */}
@@ -179,14 +208,55 @@ export default function VendorDetailPage({
             )}
           </div>
 
-          <div className="rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md shadow-sm p-6">
+          <div className="rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md shadow-sm p-6 flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="size-4 text-amber-500" />
               <h2 className="text-lg font-semibold">Risk Narrative</h2>
+              {latestRisk?.narrative_source === "llm" && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider text-white bg-linear-to-br from-red-500 to-amber-500">
+                  <Sparkles className="size-2.5" />
+                  AI
+                </span>
+              )}
+              {latestRisk?.narrative_source === "deterministic-fallback" && (
+                <span className="text-[10px] font-mono text-zinc-400">
+                  rules
+                </span>
+              )}
+              <button
+                onClick={enhance}
+                disabled={enhancing || !latestRisk}
+                title="Generate a richer narrative via the LLM"
+                className={cn(
+                  "ml-auto inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md transition-colors",
+                  "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900",
+                  "hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200",
+                  enhancing && "opacity-60 cursor-wait",
+                )}
+              >
+                {enhancing ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Sparkles className="size-3 text-amber-500" />
+                )}
+                {enhancing ? "Generating…" : "Enhance"}
+              </button>
             </div>
-            <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-200">
+            <motion.p
+              key={latestRisk?.narrative ?? "empty"}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-200 flex-1"
+            >
               {latestRisk?.narrative ?? "No narrative available yet."}
-            </p>
+            </motion.p>
+            {latestRisk?.narrative_model && (
+              <p className="mt-2 text-[10px] font-mono text-zinc-400">
+                via {latestRisk.narrative_provider}
+                {latestRisk.narrative_model && ` · ${latestRisk.narrative_model}`}
+              </p>
+            )}
             {latestRisk?.triggered_rules &&
               latestRisk.triggered_rules.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">

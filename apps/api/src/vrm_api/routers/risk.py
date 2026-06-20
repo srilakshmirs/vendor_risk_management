@@ -14,6 +14,7 @@ from ..db import get_db
 from ..models import AuditLog, RiskAssessment, Vendor
 from ..scoring import evaluate_all, score_vendor, vendor_context_from_orm
 from ..scoring.engine import ScoredVendor
+from ..scoring.narratives import enhance_narrative
 from ..scoring.score_all import run as run_score_all
 
 router = APIRouter(prefix="/risk", tags=["risk"])
@@ -33,6 +34,10 @@ class ScoredVendorOut(BaseModel):
     narrative: str
     reasons: dict[str, list[str]]
     model_version: str
+    # Provenance of the narrative — populated when LLM enhancement has run
+    narrative_source: str | None = None         # "llm" | "deterministic-fallback" | None
+    narrative_provider: str | None = None       # "claude" | "ollama" | "mock"
+    narrative_model: str | None = None          # actual model id
 
     @classmethod
     def from_engine(cls, s: ScoredVendor) -> "ScoredVendorOut":
@@ -43,6 +48,17 @@ class ScoreAllOut(BaseModel):
     status: str
     vendors: int
     assessments_written: int
+
+
+class EnhanceOut(BaseModel):
+    vendor_id: str
+    narrative: str
+    source: str            # "llm" | "deterministic-fallback"
+    provider: str | None = None
+    model: str | None = None
+    usage: dict[str, Any] | None = None
+    deterministic_narrative: str | None = None  # kept for fallback / comparison
+    persisted: bool = False
 
 
 class EvalOut(BaseModel):
@@ -120,6 +136,7 @@ def latest_score(vendor_id: str, db: Session = Depends(get_db)) -> ScoredVendorO
     if latest is None:
         return None
     components = latest.components or {}
+    meta = components.get("meta") or {}
     return ScoredVendorOut(
         vendor_id=vendor.vendor_id,
         score=latest.score,
@@ -133,6 +150,9 @@ def latest_score(vendor_id: str, db: Session = Depends(get_db)) -> ScoredVendorO
         narrative=latest.narrative or "",
         reasons=components.get("reasons", {}),
         model_version=latest.model_version,
+        narrative_source=meta.get("narrative_source"),
+        narrative_provider=meta.get("narrative_provider"),
+        narrative_model=meta.get("narrative_model"),
     )
 
 
@@ -144,6 +164,73 @@ def score_all_endpoint(background: BackgroundTasks, async_mode: bool = False) ->
         return ScoreAllOut(status="queued", vendors=0, assessments_written=0)
     counts = run_score_all(replace=True)
     return ScoreAllOut(status="complete", **counts)
+
+
+@router.post("/score/{vendor_id}/enhance", response_model=EnhanceOut)
+async def enhance_one(
+    vendor_id: str,
+    persist: bool = True,
+    db: Session = Depends(get_db),
+) -> EnhanceOut:
+    """Re-generate the risk narrative for a vendor via the LLM.
+
+    Uses the most recent RiskAssessment as input. If there is no assessment
+    on record yet, scores the vendor first (deterministic, fast) and then
+    enhances. Falls back to the deterministic narrative if the LLM errors.
+    """
+    vendor = _load_vendor_with_relations(db, vendor_id)
+    ctx = vendor_context_from_orm(vendor)
+
+    # Score (or re-score) deterministically — cheap, gives us the baseline narrative.
+    scored = score_vendor(ctx)
+
+    # Async LLM call (can take a few seconds with Ollama)
+    enhanced_text, meta = await enhance_narrative(ctx, scored, prefer_smart=True)
+    deterministic = scored.narrative
+
+    if persist:
+        # Find the most recent assessment (if any) and update its narrative in-place,
+        # OR insert a new one if none exists. This keeps the timeline tidy: enhancing
+        # an existing assessment doesn't create a duplicate row.
+        latest = max(vendor.risk_assessments, key=lambda r: r.created_at, default=None)
+        if latest is None:
+            _persist(db, vendor, scored)
+            db.flush()
+            latest = max(vendor.risk_assessments, key=lambda r: r.created_at)
+
+        latest.narrative = enhanced_text
+        # Stash both the deterministic version and LLM metadata in components.meta
+        components = dict(latest.components or {})
+        meta_block = dict(components.get("meta", {}))
+        meta_block.update({
+            "narrative_source": meta.get("source"),
+            "narrative_provider": meta.get("provider"),
+            "narrative_model": meta.get("model"),
+            "narrative_usage": meta.get("usage"),
+            "deterministic_narrative": deterministic,
+        })
+        components["meta"] = meta_block
+        latest.components = components
+
+        db.add(AuditLog(
+            actor="api",
+            action="narrative_enhance",
+            entity_type="risk_assessment",
+            entity_id=str(latest.id),
+            payload={"vendor": vendor_id, "source": meta.get("source"), "model": meta.get("model")},
+        ))
+        db.commit()
+
+    return EnhanceOut(
+        vendor_id=vendor_id,
+        narrative=enhanced_text,
+        source=str(meta.get("source", "unknown")),
+        provider=meta.get("provider"),
+        model=meta.get("model"),
+        usage=meta.get("usage"),
+        deterministic_narrative=deterministic if deterministic != enhanced_text else None,
+        persisted=persist,
+    )
 
 
 @router.get("/eval", response_model=EvalOut)

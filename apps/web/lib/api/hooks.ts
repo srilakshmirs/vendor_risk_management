@@ -2,7 +2,7 @@
 
 import useSWR, { type SWRConfiguration } from "swr";
 import { api } from "./client";
-import type { VendorListParams } from "./types";
+import type { AlertListParams, VendorListParams } from "./types";
 
 const fetcherBase = <T,>(thunk: () => Promise<T>) => () => thunk();
 
@@ -48,6 +48,22 @@ export function useEval(config?: SWRConfiguration) {
   return useSWR("eval", fetcherBase(api.eval), {
     refreshInterval: 60_000,
     revalidateOnFocus: false,
+    ...config,
+  });
+}
+
+export function useAlerts(params: AlertListParams = {}, config?: SWRConfiguration) {
+  const key = ["alerts", JSON.stringify(params)] as const;
+  return useSWR(key, () => api.listAlerts(params), {
+    keepPreviousData: true,
+    refreshInterval: 30_000,
+    ...config,
+  });
+}
+
+export function useAlertCounts(config?: SWRConfiguration) {
+  return useSWR("alert-counts", fetcherBase(api.alertCounts), {
+    refreshInterval: 20_000,
     ...config,
   });
 }
