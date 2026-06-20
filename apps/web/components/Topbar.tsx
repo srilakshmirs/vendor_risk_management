@@ -5,6 +5,7 @@ import { Bell, Cpu, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAlertCounts, useHealth, useLLMInfo } from "../lib/api/hooks";
 import { cn } from "../lib/cn";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   const { data: health } = useHealth();
@@ -71,6 +72,8 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
             </span>
           )}
         </div>
+        <ThemeToggle />
+
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <span className="font-mono text-[11px]">
             API{" "}

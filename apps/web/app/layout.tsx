@@ -3,6 +3,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { Sidebar } from "../components/Sidebar";
+import { ThemeProvider } from "../components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "VRM Intelligence — Société Générale TPRM",
@@ -16,12 +17,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={GeistSans.className}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 flex flex-col min-w-0">{children}</main>
-        </div>
+        <ThemeProvider>
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <main className="flex-1 flex flex-col min-w-0">{children}</main>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

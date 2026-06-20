@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -16,6 +17,7 @@ from .db import init_db
 from .logging_config import configure_logging, get_logger
 from .routers import alerts, ask, audit, contracts, health, llm_info, risk, vendors
 from .services import scheduler as scheduler_service
+from .services.warmup import warmup_all
 
 configure_logging()
 log = get_logger(__name__)
@@ -26,9 +28,19 @@ async def lifespan(app: FastAPI):
     log.info("api_startup", environment=settings.environment, llm_provider=settings.llm_provider)
     init_db()
     scheduler_service.start()
+
+    # Fire warmup as background task — does NOT block startup.
+    # API becomes reachable immediately; embedder + LLM warm in parallel.
+    warmup_task: asyncio.Task | None = None
+    if settings.warmup_on_startup:
+        warmup_task = asyncio.create_task(warmup_all(), name="warmup")
+        app.state.warmup_task = warmup_task
+
     try:
         yield
     finally:
+        if warmup_task is not None and not warmup_task.done():
+            warmup_task.cancel()
         scheduler_service.shutdown()
         log.info("api_shutdown")
 

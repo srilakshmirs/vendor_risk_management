@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2"
 
+    # --- Startup behaviour ---
+    # Pre-warm the embedder + LLM on FastAPI startup so the first /ask request
+    # isn't a cold start. Fires as a background task — does NOT block startup.
+    warmup_on_startup: bool = True
+
     # --- Data paths ---
     data_dir: Path = DATA_DIR
     vendor_registry_csv: Path = DATA_DIR / "vendor_registry.csv"

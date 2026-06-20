@@ -1,8 +1,16 @@
 @import "tailwindcss";
 @import "@repo/tailwind-config";
 
+/* Switch Tailwind from auto prefers-color-scheme detection to an explicit
+   .dark class. next-themes toggles this class on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 html,
@@ -12,19 +20,19 @@ body {
 
 body {
   @apply bg-zinc-50 text-zinc-900 antialiased;
-  transition: background-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    @apply text-zinc-100;
-    background-color: #09090b; /* zinc-950 */
-    background-image:
-      radial-gradient(at 30% 0%, rgba(220, 38, 38, 0.04) 0%, transparent 50%),
-      radial-gradient(at 70% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%),
-      radial-gradient(at 50% 50%, rgba(161, 161, 170, 0.02) 0%, transparent 70%);
-    background-attachment: fixed;
-  }
+.dark body {
+  @apply text-zinc-100;
+  background-color: #09090b; /* zinc-950 */
+  background-image:
+    radial-gradient(at 30% 0%, rgba(220, 38, 38, 0.04) 0%, transparent 50%),
+    radial-gradient(at 70% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(161, 161, 170, 0.02) 0%, transparent 70%);
+  background-attachment: fixed;
 }
 
 /* Slim, monochrome scrollbar */
@@ -43,4 +51,20 @@ body {
 /* Focus ring utility */
 .focus-ring {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950;
+}
+
+/* Skeleton shimmer animation (slightly more elegant than animate-pulse alone) */
+@keyframes vrm-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.vrm-skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(120, 120, 120, 0.08) 0%,
+    rgba(120, 120, 120, 0.18) 50%,
+    rgba(120, 120, 120, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: vrm-shimmer 1.4s ease-in-out infinite;
 }

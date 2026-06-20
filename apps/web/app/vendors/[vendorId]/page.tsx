@@ -23,6 +23,7 @@ import { ComponentBreakdown } from "../../../components/ComponentBreakdown";
 import { PageTransition } from "../../../components/PageTransition";
 import { RiskGauge } from "../../../components/RiskGauge";
 import { SeverityBadge } from "../../../components/SeverityBadge";
+import { Skeleton, SkeletonCard, SkeletonLines } from "../../../components/Skeleton";
 import { TrafficLight } from "../../../components/TrafficLight";
 import { Topbar } from "../../../components/Topbar";
 import { api } from "../../../lib/api/client";
@@ -93,10 +94,67 @@ export default function VendorDetailPage({
   if (isLoading && !vendor) {
     return (
       <>
-        <Topbar title="Loading…" />
-        <div className="flex-1 grid place-items-center">
-          <Loader2 className="size-6 animate-spin text-zinc-400" />
-        </div>
+        <Topbar
+          title="Loading vendor…"
+          subtitle={vendorId}
+        />
+        <PageTransition>
+          <div className="px-8 py-6 space-y-6">
+            {/* Toolbar row */}
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-28" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-40" />
+                <Skeleton className="h-9 w-36" />
+              </div>
+            </div>
+            {/* Hero row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <SkeletonCard>
+                <Skeleton className="h-5 w-32 mb-4" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <div className="mt-3 flex items-center justify-between">
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </SkeletonCard>
+              <SkeletonCard>
+                <Skeleton className="h-5 w-40 mb-4" />
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i}>
+                      <div className="flex justify-between mb-1">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-12" />
+                      </div>
+                      <Skeleton className="h-2 w-full rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </SkeletonCard>
+              <SkeletonCard>
+                <Skeleton className="h-5 w-36 mb-4" />
+                <SkeletonLines count={4} />
+              </SkeletonCard>
+            </div>
+            {/* Profile + certs + data access row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i}>
+                  <Skeleton className="h-5 w-28 mb-4" />
+                  <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <div key={j} className="flex justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-28" />
+                      </div>
+                    ))}
+                  </div>
+                </SkeletonCard>
+              ))}
+            </div>
+          </div>
+        </PageTransition>
       </>
     );
   }
