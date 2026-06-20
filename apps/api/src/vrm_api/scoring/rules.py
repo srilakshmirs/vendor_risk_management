@@ -67,6 +67,27 @@ def rule_under_investigation(ctx: VendorContext, today: date) -> RuleHit | None:
     return None
 
 
+def rule_sbom_critical(ctx: VendorContext, today: date) -> RuleHit | None:
+    if ctx.sbom_critical_vulns > 0:
+        return RuleHit(
+            "CRITICAL_SBOM_VULNERABILITY",
+            "CRITICAL",
+            "R08",
+            f"SBOM scan detected {ctx.sbom_critical_vulns} CRITICAL software vulnerabilities (e.g., Log4Shell, Heartbleed).",
+        )
+    return None
+
+
+def rule_sbom_high(ctx: VendorContext, today: date) -> RuleHit | None:
+    if ctx.sbom_high_vulns > 0:
+        return RuleHit(
+            "HIGH_SBOM_VULNERABILITY",
+            "HIGH",
+            "R09",
+            f"SBOM scan detected {ctx.sbom_high_vulns} HIGH software vulnerabilities.",
+        )
+    return None
+
 def rule_expired_certification_sensitive(ctx: VendorContext, today: date) -> RuleHit | None:
     expired = ctx.expired_certs()
     if expired and ctx.has_sensitive_data:
@@ -131,7 +152,9 @@ def rule_elevated_risk(ctx: VendorContext, today: date) -> RuleHit | None:
 RULE_PIPELINE: tuple[Rule, ...] = (
     rule_breached_high_access,           # CRITICAL
     rule_under_investigation,            # CRITICAL
+    rule_sbom_critical,                  # CRITICAL
     rule_high_risk_score,                # HIGH — specific (prelim > 80)
+    rule_sbom_high,                      # HIGH
     rule_expired_certification_sensitive, # HIGH — softer signal
     rule_recently_breached_lower_scope,  # MEDIUM
     rule_contract_expired_active_access, # MEDIUM

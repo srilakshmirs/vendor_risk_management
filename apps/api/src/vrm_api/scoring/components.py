@@ -109,15 +109,19 @@ def financial_score(ctx: VendorContext, today: date) -> tuple[int, list[str]]:
     """Vendor failure risk → service continuity risk to us."""
     reasons: list[str] = []
     # Invert: financial_health_score 100 = healthy, so risk = 100 - health.
-    base = 100 - ctx.financial_health_score
+    base_score = 100 - ctx.financial_health_score
     if ctx.financial_health_score < 50:
         reasons.append(f"Low financial health score ({ctx.financial_health_score}/100)")
     elif ctx.financial_health_score < 70:
         reasons.append(f"Moderate financial health ({ctx.financial_health_score}/100)")
     if ctx.under_investigation:
-        base += 25
+        base_score += 25
         reasons.append("Vendor is under active investigation")
-    return _clip(base), reasons
+
+    if not reasons:
+        reasons.append("No financial flags")
+
+    return min(100, base_score), reasons
 
 
 def operational_score(ctx: VendorContext, today: date) -> tuple[int, list[str]]:
@@ -142,6 +146,14 @@ def operational_score(ctx: VendorContext, today: date) -> tuple[int, list[str]]:
     if ctx.criticality == "Tier1":
         # Higher operational sensitivity for top-tier vendors
         score += 5
+
+    # We heavily penalize known vulnerabilities in the supply chain.
+    if ctx.sbom_critical_vulns > 0:
+        score += 40
+        reasons.append(f"SBOM contains {ctx.sbom_critical_vulns} CRITICAL vulnerabilities")
+    elif ctx.sbom_high_vulns > 0:
+        score += 25
+        reasons.append(f"SBOM contains {ctx.sbom_high_vulns} HIGH vulnerabilities")
 
     return _clip(score), reasons
 

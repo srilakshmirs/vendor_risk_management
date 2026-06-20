@@ -10,6 +10,7 @@ from .breach import BreachEvent
 from .alert import Alert
 from .audit import AuditLog
 from .embedding import Embedding
+from .sbom import Sbom, SbomComponent
 
 __all__ = [
     "Base",
@@ -22,4 +23,6 @@ __all__ = [
     "Alert",
     "AuditLog",
     "Embedding",
+    "Sbom",
+    "SbomComponent",
 ]

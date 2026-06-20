@@ -63,6 +63,10 @@ class VendorContext:
 
     # Audit
     last_assessment_date: date | None = None
+    
+    # SBOM
+    sbom_critical_vulns: int = 0
+    sbom_high_vulns: int = 0
 
     # Geography (kept last for dataclass field-ordering rules — must come after non-defaults)
     country: str = ""             # ISO country code (e.g. "FR", "US")
@@ -161,6 +165,17 @@ def vendor_context_from_orm(vendor: Any) -> VendorContext:
         CertView(cert_type=c.cert_type, status=c.status, expiry_date=c.expiry_date)
         for c in vendor.certifications
     )
+    
+    # SBOM Vulnerabilities
+    critical_vulns = 0
+    high_vulns = 0
+    latest_sbom = vendor.sboms[0] if getattr(vendor, "sboms", None) else None
+    if latest_sbom:
+        for comp in latest_sbom.components:
+            if comp.highest_severity == "CRITICAL":
+                critical_vulns += 1
+            elif comp.highest_severity == "HIGH":
+                high_vulns += 1
 
     return VendorContext(
         vendor_id=vendor.vendor_id,
@@ -183,4 +198,6 @@ def vendor_context_from_orm(vendor: Any) -> VendorContext:
         last_breach_severity=last_breach_severity,
         certifications=certs,
         last_assessment_date=vendor.last_assessment_date,
+        sbom_critical_vulns=critical_vulns,
+        sbom_high_vulns=high_vulns,
     )

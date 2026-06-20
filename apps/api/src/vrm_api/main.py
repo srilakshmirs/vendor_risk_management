@@ -15,7 +15,7 @@ from . import __version__
 from .config import settings
 from .db import init_db
 from .logging_config import configure_logging, get_logger
-from .routers import alerts, ask, audit, contracts, health, llm_info, risk, vendors
+from .routers import alerts, ask, audit, contracts, health, llm_info, risk, sbom, vendors
 from .services import scheduler as scheduler_service
 from .services.warmup import warmup_all
 
@@ -91,6 +91,7 @@ app.include_router(contracts.router)
 app.include_router(ask.router)
 app.include_router(alerts.router)
 app.include_router(audit.router)
+app.include_router(sbom.router)
 
 
 @app.get("/", tags=["meta"])

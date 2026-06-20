@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from .contract import Contract
     from .data_access import DataAccess
     from .risk import RiskAssessment
+    from .sbom import Sbom
 
 
 class Vendor(Base, TimestampMixin):
@@ -45,6 +46,9 @@ class Vendor(Base, TimestampMixin):
     )
     breaches: Mapped[list["BreachEvent"]] = relationship(back_populates="vendor", cascade="all, delete-orphan")
     alerts: Mapped[list["Alert"]] = relationship(back_populates="vendor", cascade="all, delete-orphan")
+    sboms: Mapped[list["Sbom"]] = relationship(
+        back_populates="vendor", cascade="all, delete-orphan", order_by="Sbom.created_at.desc()"
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Vendor {self.vendor_id} {self.name}>"

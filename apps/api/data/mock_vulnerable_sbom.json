@@ -1,0 +1,42 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "Vendor-Payment-Gateway",
+      "version": "v2.1.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "log4j-core",
+      "version": "2.14.1",
+      "description": "Apache Log4j Core (VULNERABLE VERSION)"
+    },
+    {
+      "type": "library",
+      "name": "spring-core",
+      "version": "5.3.17",
+      "description": "Spring Framework Core (VULNERABLE VERSION)"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "16.14.0",
+      "description": "React Frontend Library"
+    },
+    {
+      "type": "library",
+      "name": "lodash",
+      "version": "4.17.21"
+    },
+    {
+      "type": "library",
+      "name": "axios",
+      "version": "0.21.1"
+    }
+  ]
+}
