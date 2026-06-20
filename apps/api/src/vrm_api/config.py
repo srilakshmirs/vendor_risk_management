@@ -65,6 +65,18 @@ class Settings(BaseSettings):
     weight_financial: float = 0.15
     weight_operational: float = 0.10
 
+    # --- Email notifications ---
+    email_enabled: bool = True
+    email_mode: Literal["smtp", "console"] = "console"  # console = log-only (no real SMTP)
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+    email_from: str = "vrm-alerts@socgen-hack.com"
+    email_admin_recipients: list[str] = Field(default_factory=lambda: ["yaswanth@gmail.com"])
+    email_send_to_vendor_contact: bool = False
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

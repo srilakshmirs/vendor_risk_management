@@ -4,6 +4,7 @@
 .PHONY: help install api web docs dev mock-data sample-contracts seed reset llm-info \
         score-all eval eval-json risk-of ask-reindex ask \
         alerts-sweep breach-poll alerts-count audit-pdf enhance \
+        financial-scrape cert-verify pitch-pdf pitch-pptx pitch-html \
         demo-reset \
         test lint format up down logs clean
 
@@ -80,6 +81,12 @@ alerts-sweep:  ## Manually run cert/contract expiry sweep
 breach-poll:  ## Manually poll the mock breach feed (also rescores affected vendors)
 	cd $(API_DIR) && uv run python -m vrm_api.services.breach_feed
 
+financial-scrape:  ## Manually poll the mock public-records financial health scraper
+	cd $(API_DIR) && uv run python -m vrm_api.services.financial_scraper
+
+cert-verify:  ## Manually poll the mock third-party SOC2/ISO/PCI verification service
+	cd $(API_DIR) && uv run python -m vrm_api.services.cert_verifier
+
 alerts-count:  ## Show open / by-severity / by-type alert counts
 	@curl -s http://localhost:8000/alerts/count | python3 -m json.tool
 
@@ -92,6 +99,19 @@ audit-pdf:  ## Download a vendor audit pack PDF: make audit-pdf VID=V0007
 enhance:  ## LLM-enhance the risk narrative for a vendor: make enhance VID=V0276
 	@curl -fsS -X POST "http://localhost:8000/risk/score/$(VID)/enhance" | python3 -m json.tool
 
+# ── Pitch deck (Marp) ──
+pitch-pdf:  ## Render docs/pitch-deck.md → docs/pitch-deck.pdf
+	npx --yes @marp-team/marp-cli@latest --allow-local-files docs/pitch-deck.md -o docs/pitch-deck.pdf
+	@echo "→ docs/pitch-deck.pdf"
+
+pitch-pptx:  ## Render docs/pitch-deck.md → docs/pitch-deck.pptx (editable in PowerPoint/Keynote)
+	npx --yes @marp-team/marp-cli@latest --allow-local-files docs/pitch-deck.md -o docs/pitch-deck.pptx
+	@echo "→ docs/pitch-deck.pptx"
+
+pitch-html:  ## Render docs/pitch-deck.md → docs/pitch-deck.html (open in browser, present with arrow keys)
+	npx --yes @marp-team/marp-cli@latest --allow-local-files docs/pitch-deck.md -o docs/pitch-deck.html
+	@echo "→ docs/pitch-deck.html"
+
 # ── Demo readiness ──
 # Bullet-proof one-command reset before the live demo. Idempotent; safe to re-run.
 # Destructive: wipes & re-seeds vendors. Runs without the FastAPI process being up.
@@ -101,26 +121,32 @@ HERO_VENDORS ?= V0276 V0007
 
 demo-reset:  ## Full demo prep — wipes data, re-seeds, scores, indexes, alerts, breaches, enhances hero vendors
 	@echo ""
-	@echo "==> 1/7  Ensuring Postgres is up..."
+	@echo "==> 1/9  Ensuring Postgres is up..."
 	@docker compose up -d postgres >/dev/null 2>&1 || echo "    (docker compose unavailable — assuming Postgres is reachable on :5432)"
 	@printf "    "; until docker exec vrm-postgres pg_isready -U vrm -d vrm >/dev/null 2>&1; do printf "."; sleep 1; done; echo " ready"
 	@echo ""
-	@echo "==> 2/7  Seeding 400 vendors (drops + recreates tables)..."
+	@echo "==> 2/9  Seeding 400 vendors (drops + recreates tables)..."
 	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.seeds.ingest_csv --reset 2>&1 | grep -E "vendors|certifications|contracts|breaches|data_access" | tail -6
 	@echo ""
-	@echo "==> 3/7  Scoring all vendors (rules-v1.1)..."
+	@echo "==> 3/9  Scoring all vendors (rules-v1.1)..."
 	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.scoring.score_all --replace 2>&1 | grep -E "vendors|assessments" | tail -3
 	@echo ""
-	@echo "==> 4/7  Reindexing embeddings for /ask..."
+	@echo "==> 4/9  Reindexing embeddings for /ask..."
 	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.rag.indexer 2>&1 | grep -E "vendors|chunks" | tail -3
 	@echo ""
-	@echo "==> 5/7  Sweeping cert/contract expiries (60/30/7 day alerts)..."
+	@echo "==> 5/9  Sweeping cert/contract expiries (60/30/7 day alerts)..."
 	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.services.expiry_sweep 2>&1 | grep -E "considered|created|skipped" | tail -3
 	@echo ""
-	@echo "==> 6/7  Polling mock breach feed (auto-rescores affected vendors)..."
+	@echo "==> 6/9  Polling mock breach feed (auto-rescores affected vendors)..."
 	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.services.breach_feed 2>&1 | grep -E "entries|ingested|rescored" | tail -3
 	@echo ""
-	@echo "==> 7/7  LLM-enhancing hero vendor narratives ($(HERO_VENDORS)) — slow on Ollama, fast on Claude..."
+	@echo "==> 7/9  Polling mock public-records financial scraper..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.services.financial_scraper 2>&1 | grep -E "entries|updated|alerts_raised|rescored" | tail -4
+	@echo ""
+	@echo "==> 8/9  Verifying SOC 2 / ISO / PCI status via mock third-party API..."
+	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.services.cert_verifier 2>&1 | grep -E "entries|updated|alerts_raised|rescored" | tail -4
+	@echo ""
+	@echo "==> 9/9  LLM-enhancing hero vendor narratives ($(HERO_VENDORS)) — slow on Ollama, fast on Claude..."
 	@cd $(API_DIR) && LOG_LEVEL=WARNING uv run python -m vrm_api.scoring.enhance_cli $(HERO_VENDORS) 2>&1 | grep -E "✓|✗|Enhancing"
 	@echo ""
 	@echo "✅ Demo data ready."

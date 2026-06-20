@@ -19,7 +19,9 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from ..logging_config import get_logger
 from .breach_feed import poll_breach_feed
+from .cert_verifier import verify_certifications
 from .expiry_sweep import sweep_expiries
+from .financial_scraper import poll_financial_feed
 
 log = get_logger(__name__)
 _scheduler: AsyncIOScheduler | None = None
@@ -54,6 +56,22 @@ def _run_daily_rescore() -> None:
         log.info("scheduler_daily_rescore_done", **counts)
     except Exception as exc:  # noqa: BLE001
         log.exception("scheduler_daily_rescore_failed", error=str(exc))
+
+
+def _run_financial_scrape() -> None:
+    try:
+        counts = poll_financial_feed()
+        log.info("scheduler_financial_scrape_done", **counts)
+    except Exception as exc:  # noqa: BLE001
+        log.exception("scheduler_financial_scrape_failed", error=str(exc))
+
+
+def _run_cert_verify() -> None:
+    try:
+        counts = verify_certifications()
+        log.info("scheduler_cert_verify_done", **counts)
+    except Exception as exc:  # noqa: BLE001
+        log.exception("scheduler_cert_verify_failed", error=str(exc))
 
 
 def start() -> AsyncIOScheduler | None:
@@ -93,6 +111,26 @@ def start() -> AsyncIOScheduler | None:
         trigger=CronTrigger(hour=3, minute=0),
         id="daily_rescore",
         name="Daily risk rescore",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Public records / financial health poll — daily at 04:00 UTC
+    s.add_job(
+        _run_financial_scrape,
+        trigger=CronTrigger(hour=4, minute=0),
+        id="financial_scrape",
+        name="Public records financial health poll",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Third-party SOC 2 / ISO / PCI verification — weekly Monday 02:00 UTC
+    s.add_job(
+        _run_cert_verify,
+        trigger=CronTrigger(day_of_week="mon", hour=2, minute=0),
+        id="cert_verify",
+        name="Third-party certification verification",
         replace_existing=True,
         max_instances=1,
     )

@@ -1,0 +1,37 @@
+[
+  {
+    "vendor_id": "V0276",
+    "new_health_score": 35,
+    "source": "BloombergGOV",
+    "detected_at": "2026-06-19",
+    "reason": "Reuters: vendor missed two consecutive bond coupon payments; credit downgrade S&P BBB → B-."
+  },
+  {
+    "vendor_id": "V0042",
+    "new_health_score": 52,
+    "source": "MoodysAnalytics",
+    "detected_at": "2026-06-18",
+    "reason": "Q2 earnings miss by 38% vs analyst consensus; covenant breach warning."
+  },
+  {
+    "vendor_id": "V0145",
+    "new_health_score": 41,
+    "source": "DnB",
+    "detected_at": "2026-06-15",
+    "reason": "Pending wrongful-dismissal class action; reserved $80M legal contingency."
+  },
+  {
+    "vendor_id": "V0011",
+    "new_health_score": 88,
+    "source": "S&P",
+    "detected_at": "2026-06-14",
+    "reason": "Upgraded credit outlook to Positive following successful EU expansion."
+  },
+  {
+    "vendor_id": "V0023",
+    "new_health_score": 48,
+    "source": "DnB",
+    "detected_at": "2026-06-12",
+    "reason": "Regulatory fine €18M from German BaFin for KYC deficiencies."
+  }
+]

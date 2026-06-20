@@ -30,6 +30,8 @@ from sqlalchemy import and_, select
 from ..db import SessionLocal, init_db
 from ..logging_config import configure_logging, get_logger
 from ..models import Alert, AuditLog, Certification, Contract, Vendor
+from ..services.email_service import send_email_fire_and_forget, _resolve_recipients, build_risk_alert_html, _base_html, _info_row, _section_divider, _SEVERITY_COLORS
+from ..config import get_settings
 
 configure_logging()
 log = get_logger(__name__)
@@ -146,6 +148,49 @@ def _gather_contract_alerts(db, today: date) -> list[_Pending]:
     return pending
 
 
+def _send_expiry_alert_email(p: _Pending) -> None:
+    """Send an email notification for a HIGH/CRITICAL expiry alert."""
+    s = get_settings()
+    if not s.email_enabled:
+        return
+
+    recipients = list(s.email_admin_recipients)
+    if not recipients:
+        return
+
+    sev_color, sev_icon = _SEVERITY_COLORS.get(p.severity, ("#64748b", "⚪"))
+
+    rows = '<table width="100%" cellpadding="0" cellspacing="0">'
+    rows += _info_row("Vendor", f"{p.vendor_name} ({p.vendor_id})")
+    rows += _info_row("Alert Type", p.alert_type)
+    rows += _info_row("Severity", f"{sev_icon} {p.severity}", sev_color)
+    rows += _info_row("Due Date", p.due_date.isoformat())
+    rows += _section_divider()
+    rows += f"""\
+    <tr>
+      <td colspan="2" style="padding:8px 0;">
+        <div style="background:#fef2f2;border-left:4px solid {sev_color};padding:12px 16px;border-radius:4px;">
+          <strong style="color:{sev_color};">Alert Details</strong>
+          <p style="margin:8px 0 0;color:#1e293b;font-size:14px;line-height:1.5;">{p.message}</p>
+        </div>
+      </td>
+    </tr>"""
+    rows += f"""\
+    <tr>
+      <td colspan="2" style="padding:20px 0 0;">
+        <a href="http://localhost:3001/vendors/{p.vendor_id}" 
+           style="display:inline-block;background:{sev_color};color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
+          View in Dashboard →
+        </a>
+      </td>
+    </tr>"""
+    rows += "</table>"
+
+    subject = f"[VRM {p.severity}] {p.vendor_name} ({p.vendor_id}) — {p.alert_type}"
+    html = _base_html("⚠️", f"VRM ALERT — {p.severity}", sev_color, rows)
+    send_email_fire_and_forget(recipients, subject, html)
+
+
 def sweep_expiries(*, today: date | None = None) -> dict[str, int]:
     """Run one full sweep. Returns counts of created/skipped/total."""
     today = today or date.today()
@@ -170,6 +215,10 @@ def sweep_expiries(*, today: date | None = None) -> dict[str, int]:
                 due_date=p.due_date,
             ))
             counts["created"] += 1
+
+            # Send email notification for HIGH/CRITICAL alerts
+            if p.severity in {"HIGH", "CRITICAL"}:
+                _send_expiry_alert_email(p)
 
         if counts["created"]:
             db.add(AuditLog(

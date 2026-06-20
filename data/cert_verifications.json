@@ -1,0 +1,38 @@
+[
+  {
+    "vendor_id": "V0007",
+    "cert_type": "SOC2",
+    "new_status": "Expired",
+    "new_expiry_date": "2026-06-10",
+    "source": "AICPA-registry",
+    "detected_at": "2026-06-19",
+    "reason": "Annual audit failed material controls test; auditor (Deloitte) revoked attestation."
+  },
+  {
+    "vendor_id": "V0145",
+    "cert_type": "ISO27001",
+    "new_status": "Expired",
+    "new_expiry_date": "2026-06-12",
+    "source": "BSI",
+    "detected_at": "2026-06-17",
+    "reason": "Surveillance audit identified 6 major non-conformities; certificate suspended pending corrective action."
+  },
+  {
+    "vendor_id": "V0042",
+    "cert_type": "PCI-DSS",
+    "new_status": "Certified",
+    "new_expiry_date": "2027-06-30",
+    "source": "QSA-Coalfire",
+    "detected_at": "2026-06-14",
+    "reason": "Successful PCI-DSS v4.0 re-attestation; valid 12 months."
+  },
+  {
+    "vendor_id": "V0023",
+    "cert_type": "SOC2",
+    "new_status": "Pending",
+    "new_expiry_date": "2026-09-30",
+    "source": "AICPA-registry",
+    "detected_at": "2026-06-13",
+    "reason": "SOC 2 Type II audit in progress; current cert lapses in 90 days."
+  }
+]

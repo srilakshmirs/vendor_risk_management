@@ -22,6 +22,16 @@ from ..config import settings
 from ..db import SessionLocal, init_db
 from ..logging_config import configure_logging, get_logger
 from ..models import Alert, AuditLog, BreachEvent, Vendor
+from ..services.email_service import (
+    notify_critical_high,
+    notify_resolution,
+    send_email_fire_and_forget,
+    _resolve_recipients,
+    _base_html,
+    _info_row,
+    _section_divider,
+    _SEVERITY_COLORS,
+)
 
 configure_logging()
 log = get_logger(__name__)
@@ -59,6 +69,59 @@ def _already_ingested(db, source: str, vendor_pk: int, detected_at: date) -> boo
         .limit(1)
     )
     return db.execute(stmt).first() is not None
+
+def _send_breach_alert_email(
+    vendor: Vendor,
+    source: str,
+    severity: str,
+    detected_at: date,
+    data_exposed: str,
+    summary: str,
+    alert_sev: str,
+) -> None:
+    """Send an email notification for a HIGH/CRITICAL breach alert."""
+    from ..config import get_settings as _get_settings
+    s = _get_settings()
+    if not s.email_enabled:
+        return
+
+    recipients = list(s.email_admin_recipients)
+    if not recipients:
+        return
+
+    sev_color, sev_icon = _SEVERITY_COLORS.get(alert_sev, ("#64748b", "⚪"))
+
+    rows = '<table width="100%" cellpadding="0" cellspacing="0">'
+    rows += _info_row("Vendor", f"{vendor.name} ({vendor.vendor_id})")
+    rows += _info_row("Breach Source", source)
+    rows += _info_row("Severity", f"{sev_icon} {alert_sev}", sev_color)
+    rows += _info_row("Detected", detected_at.isoformat())
+    rows += _info_row("Data Exposed", data_exposed or "unknown")
+    rows += _section_divider()
+    if summary:
+        rows += f"""\
+    <tr>
+      <td colspan="2" style="padding:8px 0;">
+        <div style="background:#fef2f2;border-left:4px solid {sev_color};padding:12px 16px;border-radius:4px;">
+          <strong style="color:{sev_color};">Breach Summary</strong>
+          <p style="margin:8px 0 0;color:#1e293b;font-size:14px;line-height:1.5;">{summary}</p>
+        </div>
+      </td>
+    </tr>"""
+    rows += f"""\
+    <tr>
+      <td colspan="2" style="padding:20px 0 0;">
+        <a href="http://localhost:3001/vendors/{vendor.vendor_id}" 
+           style="display:inline-block;background:{sev_color};color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
+          View in Dashboard →
+        </a>
+      </td>
+    </tr>"""
+    rows += "</table>"
+
+    subject = f"[VRM {alert_sev}] Breach Detected — {vendor.name} ({vendor.vendor_id})"
+    html = _base_html("🚨", f"BREACH DETECTED — {alert_sev}", sev_color, rows)
+    send_email_fire_and_forget(recipients, subject, html)
 
 
 def poll_breach_feed(
@@ -131,6 +194,12 @@ def poll_breach_feed(
                 due_date=detected_at,
             ))
 
+            # Send email for HIGH/CRITICAL breach alerts
+            if alert_sev in {"HIGH", "CRITICAL"}:
+                _send_breach_alert_email(
+                    vendor, source, severity, detected_at, data_exposed, summary, alert_sev,
+                )
+
             counts["ingested"] += 1
             affected_vendor_pks.add(vendor.id)
 
@@ -161,9 +230,15 @@ def poll_breach_feed(
                     selectinload(Vendor.data_access),
                     selectinload(Vendor.contracts),
                     selectinload(Vendor.breaches),
+                    selectinload(Vendor.risk_assessments),
                 )
             )
             for vendor in db.execute(stmt).scalars():
+                # Capture previous severity for resolution detection
+                prev_assessment = max(vendor.risk_assessments, key=lambda r: r.created_at, default=None) if vendor.risk_assessments else None
+                prev_severity = prev_assessment.severity if prev_assessment else None
+                prev_score = prev_assessment.score if prev_assessment else None
+
                 ctx = vendor_context_from_orm(vendor)
                 scored = score_vendor(ctx)
                 db.add(RiskAssessment(
@@ -181,6 +256,12 @@ def poll_breach_feed(
                     triggered_rules=scored.triggered_rules,
                     model_version=scored.model_version,
                 ))
+
+                # Email notifications for rescored vendors
+                notify_critical_high(scored, vendor)
+                if prev_severity in {"CRITICAL", "HIGH"} and scored.severity not in {"CRITICAL", "HIGH"}:
+                    notify_resolution(vendor, prev_severity, scored.severity, scored.score, prev_score)
+
                 counts["rescored"] += 1
             db.commit()
 

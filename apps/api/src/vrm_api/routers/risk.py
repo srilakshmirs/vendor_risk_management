@@ -16,6 +16,7 @@ from ..scoring import evaluate_all, score_vendor, vendor_context_from_orm
 from ..scoring.engine import ScoredVendor
 from ..scoring.narratives import enhance_narrative
 from ..scoring.score_all import run as run_score_all
+from ..services.email_service import notify_critical_high, notify_resolution
 
 router = APIRouter(prefix="/risk", tags=["risk"])
 
@@ -85,6 +86,7 @@ def _load_vendor_with_relations(db: Session, vendor_id: str) -> Vendor:
             selectinload(Vendor.data_access),
             selectinload(Vendor.contracts),
             selectinload(Vendor.breaches),
+            selectinload(Vendor.risk_assessments),
         )
     )
     vendor = db.execute(stmt).scalar_one_or_none()
@@ -120,11 +122,24 @@ def _persist(db: Session, vendor: Vendor, scored: ScoredVendor) -> None:
 def score_one(vendor_id: str, persist: bool = True, db: Session = Depends(get_db)) -> ScoredVendorOut:
     """Score one vendor synchronously. `persist=false` for dry-run (no DB writes)."""
     vendor = _load_vendor_with_relations(db, vendor_id)
+
+    # Capture previous severity for resolution detection
+    prev_assessment = max(vendor.risk_assessments, key=lambda r: r.created_at, default=None)
+    prev_severity = prev_assessment.severity if prev_assessment else None
+    prev_score = prev_assessment.score if prev_assessment else None
+
     ctx = vendor_context_from_orm(vendor)
     scored = score_vendor(ctx)
     if persist:
         _persist(db, vendor, scored)
         db.commit()
+
+    # Email notifications
+    notify_critical_high(scored, vendor)
+    # Resolution detection: severity dropped from CRITICAL/HIGH to lower
+    if prev_severity in {"CRITICAL", "HIGH"} and scored.severity not in {"CRITICAL", "HIGH"}:
+        notify_resolution(vendor, prev_severity, scored.severity, scored.score, prev_score)
+
     return ScoredVendorOut.from_engine(scored)
 
 

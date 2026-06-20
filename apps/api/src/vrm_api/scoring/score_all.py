@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from ..db import SessionLocal
 from ..logging_config import configure_logging, get_logger
 from ..models import AuditLog, RiskAssessment, Vendor
+from ..services.email_service import notify_critical_high, notify_resolution
 from .context import vendor_context_from_orm
 from .engine import score_vendor
 
@@ -38,8 +39,14 @@ def run(replace: bool = False) -> dict[str, int]:
             selectinload(Vendor.data_access),
             selectinload(Vendor.contracts),
             selectinload(Vendor.breaches),
+            selectinload(Vendor.risk_assessments),
         )
         for vendor in db.execute(stmt).scalars():
+            # Capture previous severity for resolution detection
+            prev_assessment = max(vendor.risk_assessments, key=lambda r: r.created_at, default=None) if vendor.risk_assessments else None
+            prev_severity = prev_assessment.severity if prev_assessment else None
+            prev_score = prev_assessment.score if prev_assessment else None
+
             ctx = vendor_context_from_orm(vendor)
             scored = score_vendor(ctx, today=today)
 
@@ -58,6 +65,13 @@ def run(replace: bool = False) -> dict[str, int]:
                 triggered_rules=scored.triggered_rules,
                 model_version=scored.model_version,
             ))
+
+            # Email notifications
+            notify_critical_high(scored, vendor)
+            # Resolution detection: severity dropped from CRITICAL/HIGH
+            if prev_severity in {"CRITICAL", "HIGH"} and scored.severity not in {"CRITICAL", "HIGH"}:
+                notify_resolution(vendor, prev_severity, scored.severity, scored.score, prev_score)
+
             counts["vendors"] += 1
             counts["assessments_written"] += 1
 

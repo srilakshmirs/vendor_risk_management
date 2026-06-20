@@ -14,7 +14,10 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Alert, AuditLog, Vendor
 from ..services.breach_feed import poll_breach_feed
+from ..services.cert_verifier import verify_certifications
+from ..services.email_service import get_email_status, notify_alert_resolved, send_email_fire_and_forget, build_risk_alert_html, build_alert_resolved_html, _resolve_recipients
 from ..services.expiry_sweep import sweep_expiries
+from ..services.financial_scraper import poll_financial_feed
 from ..services.scheduler import get_jobs_status
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
@@ -68,6 +71,25 @@ class BreachPollOut(BaseModel):
     ingested: int
     skipped_existing: int
     skipped_unknown_vendor: int
+    rescored: int
+
+
+class FinancialScrapeOut(BaseModel):
+    entries: int
+    updated: int
+    alerts_raised: int
+    skipped_unchanged: int
+    skipped_unknown_vendor: int
+    rescored: int
+
+
+class CertVerifyOut(BaseModel):
+    entries: int
+    updated: int
+    alerts_raised: int
+    skipped_unchanged: int
+    skipped_unknown_vendor: int
+    skipped_unknown_cert: int
     rescored: int
 
 
@@ -195,6 +217,11 @@ def update_alert(alert_id: int, body: AlertUpdate, db: Session = Depends(get_db)
     ))
     db.commit()
     db.refresh(alert)
+
+    # Send resolution email for CRITICAL/HIGH alerts being resolved
+    if body.status == "resolved" and previous != "resolved":
+        notify_alert_resolved(alert, vendor)
+
     return _row_to_out(alert, vendor)
 
 
@@ -220,7 +247,103 @@ def trigger_breach_poll(
     return BreachPollOut(**poll_breach_feed(rescore_affected=rescore))
 
 
+@router.post("/scrape-financial", response_model=FinancialScrapeOut)
+def trigger_financial_scrape(
+    background: BackgroundTasks,
+    async_mode: bool = False,
+    rescore: bool = True,
+) -> FinancialScrapeOut:
+    """Manual trigger for the public-records financial-health scraper."""
+    if async_mode:
+        background.add_task(poll_financial_feed, rescore_affected=rescore)
+        return FinancialScrapeOut(entries=0, updated=0, alerts_raised=0,
+                                   skipped_unchanged=0, skipped_unknown_vendor=0, rescored=0)
+    return FinancialScrapeOut(**poll_financial_feed(rescore_affected=rescore))
+
+
+@router.post("/verify-certs", response_model=CertVerifyOut)
+def trigger_cert_verify(
+    background: BackgroundTasks,
+    async_mode: bool = False,
+    rescore: bool = True,
+) -> CertVerifyOut:
+    """Manual trigger for the third-party SOC 2 / ISO / PCI verification poller."""
+    if async_mode:
+        background.add_task(verify_certifications, rescore_affected=rescore)
+        return CertVerifyOut(entries=0, updated=0, alerts_raised=0,
+                              skipped_unchanged=0, skipped_unknown_vendor=0,
+                              skipped_unknown_cert=0, rescored=0)
+    return CertVerifyOut(**verify_certifications(rescore_affected=rescore))
+
+
 @router.get("/scheduler/status", response_model=SchedulerStatusOut)
 def scheduler_status() -> SchedulerStatusOut:
     """Reports the active scheduled jobs and next-run times."""
     return SchedulerStatusOut(jobs=get_jobs_status())
+
+
+# ── Email management endpoints ────────────────────────────────────────
+class EmailStatusOut(BaseModel):
+    enabled: bool
+    mode: str
+    smtp_host: str | None
+    smtp_port: int | None
+    from_address: str = ""
+    admin_recipients: list[str]
+    send_to_vendor_contact: bool
+
+
+class NotifyOut(BaseModel):
+    status: str
+    alert_id: int
+    recipients: list[str]
+
+
+@router.get("/email-status", response_model=EmailStatusOut)
+def email_status() -> EmailStatusOut:
+    """Check if email service is configured and healthy."""
+    info = get_email_status()
+    return EmailStatusOut(
+        enabled=info["enabled"],
+        mode=info["mode"],
+        smtp_host=info.get("smtp_host"),
+        smtp_port=info.get("smtp_port"),
+        from_address=info.get("from", ""),
+        admin_recipients=info.get("admin_recipients", []),
+        send_to_vendor_contact=info.get("send_to_vendor_contact", False),
+    )
+
+
+@router.post("/{alert_id}/notify", response_model=NotifyOut)
+def notify_alert(alert_id: int, db: Session = Depends(get_db)) -> NotifyOut:
+    """Manually re-send email notification for a specific alert."""
+    row = db.execute(
+        select(Alert, Vendor).join(Vendor, Alert.vendor_id == Vendor.id).where(Alert.id == alert_id)
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
+    alert, vendor = row
+
+    recipients = _resolve_recipients(vendor)
+    if not recipients:
+        raise HTTPException(status_code=400, detail="No email recipients configured")
+
+    if alert.status == "resolved":
+        html = build_alert_resolved_html(alert, vendor)
+        subject = f"[VRM RESOLVED] Alert #{alert.id} — {alert.alert_type} for {vendor.name}"
+    else:
+        from ..services.email_service import _SEVERITY_COLORS, _base_html, _info_row, _section_divider
+        sev_color, sev_icon = _SEVERITY_COLORS.get(alert.severity, ("#64748b", "⚪"))
+        rows = '<table width="100%" cellpadding="0" cellspacing="0">'
+        rows += _info_row("Vendor", f"{vendor.name} ({vendor.vendor_id})")
+        rows += _info_row("Alert Type", alert.alert_type)
+        rows += _info_row("Severity", f"{sev_icon} {alert.severity}", sev_color)
+        rows += _info_row("Status", alert.status)
+        rows += _section_divider()
+        rows += f'<tr><td colspan="2" style="padding:8px 0;font-size:14px;color:#1e293b;">{alert.message}</td></tr>'
+        rows += "</table>"
+        html = _base_html("⚠️", f"VRM ALERT — {alert.severity}", sev_color, rows)
+        subject = f"[VRM {alert.severity}] {alert.alert_type} — {vendor.name} ({vendor.vendor_id})"
+
+    send_email_fire_and_forget(recipients, subject, html)
+    return NotifyOut(status="sent", alert_id=alert_id, recipients=recipients)
