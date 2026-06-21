@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { MarkdownAnswer } from "../../components/MarkdownAnswer";
 import { PageTransition } from "../../components/PageTransition";
 import { Topbar } from "../../components/Topbar";
 import { API_BASE } from "../../lib/api/client";
@@ -272,8 +273,8 @@ function TurnView({ turn }: { turn: Turn }) {
               {turn.error || "Something went wrong"}
             </div>
           ) : turn.answer ? (
-            <div className="prose-sm whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
-              <CitedText text={turn.answer} />
+            <div className="leading-relaxed">
+              <MarkdownAnswer text={turn.answer} />
               {turn.status === "streaming" && (
                 <motion.span
                   animate={{ opacity: [0.2, 1, 0.2] }}
@@ -294,28 +295,7 @@ function TurnView({ turn }: { turn: Turn }) {
   );
 }
 
-/** Renders the answer text, turning [V0123] markers into Vendor links. */
-function CitedText({ text }: { text: string }) {
-  const parts = text.split(/(\[V\d{4}\])/g);
-  return (
-    <>
-      {parts.map((p, i) => {
-        const m = p.match(/^\[(V\d{4})\]$/);
-        if (!m) return <span key={i}>{p}</span>;
-        const vid = m[1];
-        return (
-          <Link
-            key={i}
-            href={`/vendors/${vid}`}
-            className="inline-flex items-center px-1.5 mx-0.5 text-[11px] font-mono rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300 transition-colors align-baseline"
-          >
-            {vid}
-          </Link>
-        );
-      })}
-    </>
-  );
-}
+// `CitedText` was replaced by `MarkdownAnswer` (handles markdown + [V0123] links).
 
 function CitationsPanel({ turns }: { turns: Turn[] }) {
   const latest = turns[turns.length - 1];
@@ -394,7 +374,11 @@ async function consumeSSE(
       const dataParts: string[] = [];
       for (const line of lines) {
         if (line.startsWith("event:")) event = line.slice(6).trim();
-        else if (line.startsWith("data:")) dataParts.push(line.slice(5).trimStart());
+        else if (line.startsWith("data:")) {
+          // SSE spec: strip at most ONE leading space after "data:"
+          const raw = line.slice(5);
+          dataParts.push(raw.startsWith(" ") ? raw.slice(1) : raw);
+        }
       }
       const data = dataParts.join("\n");
       if (event || data) onEvent(event, data);
