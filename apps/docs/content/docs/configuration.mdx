@@ -14,6 +14,7 @@ All settings load from `.env` (in repo root) via `pydantic-settings`. The full s
 | `API_HOST` | `0.0.0.0` | uvicorn bind |
 | `API_PORT` | `8000` | uvicorn bind |
 | `CORS_ORIGINS` | `["http://localhost:3000","http://localhost:3001"]` | Allowed Next.js origins |
+| `WEB_BASE_URL` | `http://localhost:3000` | Base URL injected into deep links in alert emails and audit-pack PDFs. Override per environment (e.g. `https://vrm.example.com`). |
 
 ## Database
 
@@ -106,6 +107,27 @@ WARMUP_ON_STARTUP=true   # pre-load embedder + LLM in background so first /ask i
 ```
 
 The scheduler runs 5 jobs (expiry sweep, breach feed, financial scrape, cert verify, daily rescore). See [Operations → Scheduler](/docs/operations/scheduler).
+
+## Email alerts
+
+The API ships HTML email alerts for `CRITICAL` and `HIGH` severity events (breaches, expiries, financial signals, severity transitions). All settings are off-by-default-safe — leave `EMAIL_MODE=console` and nothing leaves the box.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `EMAIL_ENABLED` | `true` | Hard kill switch. Set `false` to disable every dispatch path regardless of mode. |
+| `EMAIL_MODE` | `console` | `console` logs the rendered HTML to stdout (safe for demos). `smtp` sends real mail. |
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP server hostname. |
+| `SMTP_PORT` | `587` | `587` for STARTTLS, `465` for implicit TLS. |
+| `SMTP_USER` | _(empty)_ | SMTP username. |
+| `SMTP_PASSWORD` | _(empty)_ | SMTP password / app password. |
+| `SMTP_USE_TLS` | `true` | STARTTLS on port 587. |
+| `EMAIL_FROM` | `vrm-alerts@socgen-hack.com` | `From:` header. |
+| `EMAIL_ADMIN_RECIPIENTS` | `["yaswanth@gmail.com"]` | JSON array of fallback recipients when no vendor owner exists. |
+| `EMAIL_SEND_TO_VENDOR_CONTACT` | `false` | When `true`, CC the vendor's listed contact email. |
+
+<Callout type="warn">
+Before running `make demo-reset` against a live SMTP config, set `EMAIL_ENABLED=false` or `EMAIL_MODE=console`. A clean reset generates ~170 HIGH/CRITICAL alerts and each one dispatches an email.
+</Callout>
 
 ## Mock data feeds
 

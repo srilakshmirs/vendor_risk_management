@@ -7,48 +7,7 @@ VRM Intelligence is a **Turborepo monorepo** containing three apps and a small s
 
 ## System diagram
 
-```text
-                                ┌─────────────────────────┐
-                                │  🌐 Browser             │
-                                └────────────┬────────────┘
-                                             │ HTTPS
-                                ┌────────────▼────────────┐
-                                │  Next.js 16  (port 3000)│
-                                │  React 19 · Tailwind 4  │
-                                │  SWR · recharts         │
-                                │  framer-motion          │
-                                └────────────┬────────────┘
-                                             │ REST + SSE
-                                ┌────────────▼────────────┐
-                                │  FastAPI  (port 8000)   │
-                                │  SQLAlchemy 2.0 typed   │
-                                │  structlog · CORS       │
-                                │  request-id middleware  │
-                                └────────────┬────────────┘
-              ┌──────────────────────────────┼──────────────────────────────┐
-              │                              │                              │
-   ┌──────────▼──────────┐       ┌───────────▼───────────┐       ┌──────────▼─────────┐
-   │   Scoring engine    │       │   RAG pipeline        │       │   Audit PDF        │
-   │   rules-v1.1        │       │   embedder · indexer  │       │   reportlab        │
-   │   5 components +    │       │   retriever · prompts │       │   11-section pack  │
-   │   7-rule classifier │       │   pgvector HNSW       │       │   pure Python      │
-   └──────────┬──────────┘       └───────────┬───────────┘       └──────────┬─────────┘
-              │                              │                              │
-              ▼                              ▼                              ▼
-   ┌────────────────────────────────────────────────────────────────────────────────┐
-   │  Postgres 16  +  pgvector  (HNSW cosine index)                                 │
-   │  9 ORM tables: vendors · contracts · certifications · data_access · alerts     │
-   │  risk_assessments · breach_events · audit_logs · embeddings  (+ sbom + components)│
-   └────────────────────────────────────────────────────────────────────────────────┘
-
-   ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
-   │  APScheduler         │    │  LLM (one of)        │    │  fastembed           │
-   │  5 jobs in lifespan  │    │  Ollama · Claude     │    │  BAAI/bge-small      │
-   │  expiry · breach     │    │  · mock              │    │  384-dim ONNX        │
-   │  financial · cert    │    │  get_llm() singleton │    │  local, deterministic│
-   │  daily rescore       │    │                      │    │                      │
-   └──────────────────────┘    └──────────────────────┘    └──────────────────────┘
-```
+![System Diagram](./system_diagram.png)
 
 ## Stack
 

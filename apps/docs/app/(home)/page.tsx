@@ -1,10 +1,10 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function HomePage() {
   return (
     <div className="flex flex-col justify-center items-center flex-1 px-6 py-16 text-center max-w-3xl mx-auto">
       <div className="inline-flex items-center px-3 py-1 mb-6 text-xs font-semibold uppercase tracking-wider rounded-full bg-gradient-to-r from-red-500 to-amber-500 text-white shadow-md shadow-red-500/20">
-        Société Générale TPRM · Option A
+        Société Générale
       </div>
       <h1 className="text-5xl font-bold tracking-tight mb-4 bg-gradient-to-br from-red-600 via-red-500 to-amber-500 bg-clip-text text-transparent">
         VRM Intelligence
@@ -13,8 +13,8 @@ export default function HomePage() {
         AI-powered Third-Party Vendor Risk Management.
       </p>
       <p className="text-sm text-fd-muted-foreground mb-10 max-w-2xl">
-        400 vendors, continuous scoring, streaming Q&amp;A, one-click audit packs.
-        All 5 hackathon rubric metrics measured and passing.
+        400 vendors, continuous scoring, streaming Q&amp;A, one-click audit
+        packs. All 5 hackathon rubric metrics measured and passing.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mb-10">
@@ -61,10 +61,6 @@ export default function HomePage() {
           </p>
         </a>
       </div>
-
-      <p className="text-xs text-fd-muted-foreground font-mono">
-        v0.1.0 · rules-v1.1 · 5 / 5 rubric metrics passing
-      </p>
     </div>
   );
 }
