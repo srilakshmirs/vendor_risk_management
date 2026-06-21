@@ -19,13 +19,13 @@ _Hackathon submission — [Option A: AI-Powered Vendor Intelligence](https://soc
 
 The hackathon brief specifies five judged metrics. All five pass, with numbers measured against the provided `vendor_labels.csv` ground truth.
 
-| Rubric metric | Target | **Measured** | How |
-|---|---|---|---|
-| Vendor coverage | ≥ 95% | **100.0%** (400 / 400) | Bulk CSV ingest seeds every vendor; `GET /vendors` paginates over them all |
-| Risk-assessment accuracy | ≥ 80% | **90.0%** anomaly · **100%** CRITICAL recall · **100%** HIGH recall · F1 **1.000** | 5-component composite + 7-rule classifier (`rules-v1.1`) |
-| Alert lead time | ≥ 30 days | **60 / 30 / 7-day cascade** | APScheduler expiry-sweep job — fires LOW → MEDIUM → HIGH as deadline nears |
-| Q&A response time | ≤ 5 min | **~3-8 s** (Ollama) · **~1-2 s** (Claude Haiku) | `/ask/stream` SSE endpoint with RAG over 400 pgvector embeddings |
-| Audit report generation | ≤ 15 min | **~250 ms** | `/audit/pack/{vendor_id}` returns a styled 2-page PDF via reportlab |
+| Rubric metric            | Target    | **Measured**                                                                       | How                                                                        |
+| ------------------------ | --------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Vendor coverage          | ≥ 95%     | **100.0%** (400 / 400)                                                             | Bulk CSV ingest seeds every vendor; `GET /vendors` paginates over them all |
+| Risk-assessment accuracy | ≥ 80%     | **90.0%** anomaly · **100%** CRITICAL recall · **100%** HIGH recall · F1 **1.000** | 5-component composite + 7-rule classifier (`rules-v1.1`)                   |
+| Alert lead time          | ≥ 30 days | **60 / 30 / 7-day cascade**                                                        | APScheduler expiry-sweep job — fires LOW → MEDIUM → HIGH as deadline nears |
+| Q&A response time        | ≤ 5 min   | **~3-8 s** (Ollama) · **~1-2 s** (Claude Haiku)                                    | `/ask/stream` SSE endpoint with RAG over 400 pgvector embeddings           |
+| Audit report generation  | ≤ 15 min  | **~250 ms**                                                                        | `/audit/pack/{vendor_id}` returns a styled 2-page PDF via reportlab        |
 
 > Reproduce: `make eval` (full ASCII report) · `make eval-json` (machine-readable) · `pytest -k rubric` (regression-gated; fails CI if any metric drops).
 
@@ -37,7 +37,7 @@ These are planted in the seeded data so you can drive a clean 3-minute walkthrou
 
 1. **Portfolio overview** (`/`) — 400 vendors, severity-coloured donut, **rubric gates panel** with live pass/fail, top-10 risky vendors
 2. **Click "Poll breach feed"** in `/alerts` — the topbar badge **pulses red**, two new **CRITICAL** alerts appear with motion stagger, affected vendor scores auto-rescore in the background
-3. **Ask the analyst** (`/ask`) — type *"Which vendors have CRITICAL risk and handle PII?"* → tokens stream in real-time with inline `[V0276]` citations that link straight to the vendor
+3. **Ask the analyst** (`/ask`) — type _"Which vendors have CRITICAL risk and handle PII?"_ → tokens stream in real-time with inline `[V0276]` citations that link straight to the vendor
 4. **Drill into a CRITICAL vendor** (`/vendors/V0276`) — see the risk gauge sweep to 85, the 5-component breakdown, and the **AI-enhanced narrative** with GDPR Art 28/33 + NIST SA-9 citations
 5. **Upload a contract** on the vendor page (use `data/contracts/sample-msa.pdf`) → LLM extracts data-access permissions, 99.95% SLA, renewal date, termination clauses
 6. **Export Audit Pack** → 2-page styled PDF with every signal an auditor needs
@@ -80,11 +80,11 @@ LLM_PROVIDER=ollama           # default — local llama3.2:latest (no API key)
 # LLM_PROVIDER=mock           # offline, canned responses (for CI / no network)
 ```
 
-| Provider | Model used (fast / smart) | Why pick it |
-|---|---|---|
-| `ollama` | llama3.2:latest | Default. Zero cost, fully local. 30s narratives, but you own your data. |
-| `claude` | Haiku 4.5 / Sonnet 4.6 | Best demo quality. Sub-3-second narratives. `prefer_smart=True` opts into Sonnet. |
-| `mock` | canned text | CI, offline demos, no LLM dep at all. |
+| Provider | Model used (fast / smart) | Why pick it                                                                       |
+| -------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `ollama` | llama3.2:latest           | Default. Zero cost, fully local. 30s narratives, but you own your data.           |
+| `claude` | Haiku 4.5 / Sonnet 4.6    | Best demo quality. Sub-3-second narratives. `prefer_smart=True` opts into Sonnet. |
+| `mock`   | canned text               | CI, offline demos, no LLM dep at all.                                             |
 
 Code stays identical regardless of provider:
 
@@ -145,6 +145,7 @@ flowchart LR
 ```
 
 **Key design choices:**
+
 - **Embeddings via `fastembed`** (not Ollama) — the user's Ollama daemon doesn't expose `/api/embeddings`; fastembed gives a deterministic, provider-agnostic embedding path.
 - **PDF via `reportlab`** (not weasyprint) — zero system deps; no Cairo/Pango install pain on macOS.
 - **Scheduler started in FastAPI lifespan** — single process, no separate worker, idempotent jobs.
@@ -156,11 +157,13 @@ flowchart LR
 
 > Capture by opening the app post-`make demo-reset` and saving to `docs/screenshots/`.
 
-| Portfolio overview | Vendor detail |
-|---|---|
+| Portfolio overview                           | Vendor detail                                        |
+| -------------------------------------------- | ---------------------------------------------------- |
 | ![Portfolio](docs/screenshots/portfolio.png) | ![Vendor detail](docs/screenshots/vendor-detail.png) |
-| **Ask the analyst** | **Alerts** |
-| ![Ask](docs/screenshots/ask.png) | ![Alerts](docs/screenshots/alerts.png) |
+| **Ask the analyst**                          | **Alerts**                                           |
+| ![Ask](docs/screenshots/ask.png)             | ![Alerts](docs/screenshots/alerts.png)               |
+| **Model Eval**                               | **Audit Pack**                                       |
+| ![Model Eval](docs/screenshots/eval.png)     | ![Audit Pack](docs/screenshots/audit.png)            |
 
 ---
 
@@ -198,18 +201,18 @@ Per-severity:
 
 ## 🧰 Stack
 
-| Layer | Choice | Rationale |
-|---|---|---|
-| Monorepo | Turborepo + Bun | Standard, fast install, parallel tasks |
-| Web | Next.js 16 · React 19 · Tailwind 4 · SWR · recharts · framer-motion@12 · next-themes | App Router, server components ready, dark mode toggle |
-| API | FastAPI · SQLAlchemy 2.0 typed · Pydantic v2 · structlog | Async, OpenAPI auto-docs at `/docs`, JSON-structured logs |
-| DB | Postgres 16 + pgvector (HNSW) | Vector search for RAG; relational for everything else |
-| Python tooling | `uv` (3.13) | Fastest installer; lockfile-based reproducibility |
-| Embeddings | fastembed BAAI/bge-small-en-v1.5 (384-dim ONNX) | Deterministic, offline-capable, ~133MB cached |
-| LLM (default) | Ollama llama3.2:latest | Local, zero cost, swappable |
-| LLM (production) | Anthropic Claude Haiku 4.5 / Sonnet 4.6 | Demo-quality narratives, prompt caching for cost control |
-| PDF | reportlab 5.0 | Pure Python; no system deps |
-| Scheduler | APScheduler (AsyncIO) | In-process; no separate worker needed |
+| Layer            | Choice                                                                               | Rationale                                                 |
+| ---------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Monorepo         | Turborepo + Bun                                                                      | Standard, fast install, parallel tasks                    |
+| Web              | Next.js 16 · React 19 · Tailwind 4 · SWR · recharts · framer-motion@12 · next-themes | App Router, server components ready, dark mode toggle     |
+| API              | FastAPI · SQLAlchemy 2.0 typed · Pydantic v2 · structlog                             | Async, OpenAPI auto-docs at `/docs`, JSON-structured logs |
+| DB               | Postgres 16 + pgvector (HNSW)                                                        | Vector search for RAG; relational for everything else     |
+| Python tooling   | `uv` (3.13)                                                                          | Fastest installer; lockfile-based reproducibility         |
+| Embeddings       | fastembed BAAI/bge-small-en-v1.5 (384-dim ONNX)                                      | Deterministic, offline-capable, ~133MB cached             |
+| LLM (default)    | Ollama llama3.2:latest                                                               | Local, zero cost, swappable                               |
+| LLM (production) | Anthropic Claude Haiku 4.5 / Sonnet 4.6                                              | Demo-quality narratives, prompt caching for cost control  |
+| PDF              | reportlab 5.0                                                                        | Pure Python; no system deps                               |
+| Scheduler        | APScheduler (AsyncIO)                                                                | In-process; no separate worker needed                     |
 
 ---
 
@@ -251,20 +254,20 @@ vendor_risk_management/
 
 ## ⚙️ Operational commands (`make help`)
 
-| Command | Purpose |
-|---|---|
-| `make demo-reset` | **The big one** — full demo prep in one command |
-| `make up` / `make down` | Postgres+pgvector container lifecycle |
-| `make seed` | Load `vendor_registry.csv` into DB (drops + recreates) |
-| `make score-all` | Run scoring engine on every vendor, persist `RiskAssessment` rows |
-| `make eval` | Run eval harness, print rubric pass/fail |
-| `make ask-reindex` | Build embeddings table for `/ask` |
-| `make alerts-sweep` / `make breach-poll` | Manually trigger scheduler jobs |
-| `make enhance VID=V0276` | LLM-enhance a vendor's narrative |
-| `make audit-pdf VID=V0007` | Download a vendor's audit PDF |
-| `make sample-contracts` | Regenerate the two demo PDFs |
-| `make api` / `make web` / `make docs` | Run the three apps |
-| `make test` / `make lint` | pytest + ruff |
+| Command                                  | Purpose                                                           |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| `make demo-reset`                        | **The big one** — full demo prep in one command                   |
+| `make up` / `make down`                  | Postgres+pgvector container lifecycle                             |
+| `make seed`                              | Load `vendor_registry.csv` into DB (drops + recreates)            |
+| `make score-all`                         | Run scoring engine on every vendor, persist `RiskAssessment` rows |
+| `make eval`                              | Run eval harness, print rubric pass/fail                          |
+| `make ask-reindex`                       | Build embeddings table for `/ask`                                 |
+| `make alerts-sweep` / `make breach-poll` | Manually trigger scheduler jobs                                   |
+| `make enhance VID=V0276`                 | LLM-enhance a vendor's narrative                                  |
+| `make audit-pdf VID=V0007`               | Download a vendor's audit PDF                                     |
+| `make sample-contracts`                  | Regenerate the two demo PDFs                                      |
+| `make api` / `make web` / `make docs`    | Run the three apps                                                |
+| `make test` / `make lint`                | pytest + ruff                                                     |
 
 ---
 
@@ -297,19 +300,19 @@ CRITICAL rules also enforce a **minimum composite score floor** of 85 so the num
 
 ## 🔌 API surface (selected — full schema at `/docs`)
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /healthz` · `GET /readyz` · `GET /llm/info` | Health, readiness, LLM provenance |
-| `GET /vendors` · `GET /vendors/{id}` | List (filter/sort/page) + detail |
-| `POST /risk/score/{id}` | Recompute (sync, deterministic, ~5ms) |
-| `POST /risk/score/{id}/enhance` | LLM-enhance narrative (async, persists metadata) |
-| `GET /risk/eval` | Full eval report — drives the dashboard's rubric panel |
-| `POST /contracts/extract` | Upload PDF → structured JSON (LLM) |
-| `POST /ask` · `POST /ask/stream` | RAG Q&A — sync or SSE streaming |
-| `POST /ask/reindex` | Rebuild embeddings table |
-| `GET /alerts` · `GET /alerts/count` · `PATCH /alerts/{id}` | Alert CRUD |
-| `POST /alerts/sweep` · `POST /alerts/breach-poll` | Manual scheduler triggers |
-| `GET /audit/pack/{vendor_code}` | One-click audit PDF download |
+| Endpoint                                                   | Purpose                                                |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
+| `GET /healthz` · `GET /readyz` · `GET /llm/info`           | Health, readiness, LLM provenance                      |
+| `GET /vendors` · `GET /vendors/{id}`                       | List (filter/sort/page) + detail                       |
+| `POST /risk/score/{id}`                                    | Recompute (sync, deterministic, ~5ms)                  |
+| `POST /risk/score/{id}/enhance`                            | LLM-enhance narrative (async, persists metadata)       |
+| `GET /risk/eval`                                           | Full eval report — drives the dashboard's rubric panel |
+| `POST /contracts/extract`                                  | Upload PDF → structured JSON (LLM)                     |
+| `POST /ask` · `POST /ask/stream`                           | RAG Q&A — sync or SSE streaming                        |
+| `POST /ask/reindex`                                        | Rebuild embeddings table                               |
+| `GET /alerts` · `GET /alerts/count` · `PATCH /alerts/{id}` | Alert CRUD                                             |
+| `POST /alerts/sweep` · `POST /alerts/breach-poll`          | Manual scheduler triggers                              |
+| `GET /audit/pack/{vendor_code}`                            | One-click audit PDF download                           |
 
 Every mutation is recorded in the `audit_logs` table (SOX 404 hygiene).
 
@@ -319,105 +322,22 @@ Every mutation is recorded in the `audit_logs` table (SOX 404 hygiene).
 
 The system explicitly maps to:
 
-| Framework | Where it surfaces |
-|---|---|
-| **GDPR Article 28** (Processor Obligations) | Data-access tracking + DPA mentions in narratives |
-| **GDPR Article 33** (72h breach notification) | Breach-feed alerts include the 72h clock language |
-| **NIST SP 800-53 SA-9** (External Info System Services) | Risk-scoring rationale + audit pack |
-| **SOX 404** (Internal Controls) | Append-only `audit_logs` table — every action recorded |
-| **SOC 2 Type II · ISO/IEC 27001 · PCI-DSS** | Certification tracking + expiry alerts |
+| Framework                                               | Where it surfaces                                      |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| **GDPR Article 28** (Processor Obligations)             | Data-access tracking + DPA mentions in narratives      |
+| **GDPR Article 33** (72h breach notification)           | Breach-feed alerts include the 72h clock language      |
+| **NIST SP 800-53 SA-9** (External Info System Services) | Risk-scoring rationale + audit pack                    |
+| **SOX 404** (Internal Controls)                         | Append-only `audit_logs` table — every action recorded |
+| **SOC 2 Type II · ISO/IEC 27001 · PCI-DSS**             | Certification tracking + expiry alerts                 |
 
 ---
 
-## 🔄 Data ingestion sources
+## 📚 Documentation
 
-Every external signal flows through a **mock JSON feed + scheduled poller** today. Swapping for a real HTTP/SDK client is a single-file change — the rest of the pipeline (alert generation, auto-rescore, dashboard surfacing) is provider-agnostic.
-
-| Signal | Mock feed | Poller | Cron | Production swap |
-|---|---|---|---|---|
-| Vendor breach disclosures | `data/breach_feed.json` | `services/breach_feed.py` | every 6h | HIBP API, CISA-KEV RSS, vendor disclosure mailing lists |
-| Financial health / credit | `data/financial_signals.json` | `services/financial_scraper.py` | daily 04:00 UTC | Bloomberg API, Moody's, DnB, S&P, national credit bureaus |
-| SOC 2 / ISO / PCI verification | `data/cert_verifications.json` | `services/cert_verifier.py` | weekly Mon 02:00 UTC | AICPA SOC registry, BSI, Schellman, Coalfire QSA APIs |
-| Cert / contract expiry | DB-internal | `services/expiry_sweep.py` | hourly | _(already operates on internal data)_ |
-| Risk re-evaluation | DB-internal | `services/scheduler.py::_run_daily_rescore` | daily 03:00 UTC | _(internal)_ |
-
-Each poller is **idempotent + dedupe-aware** (skips alerts already raised within a 7- or 24-hour window) and writes to the `audit_logs` table so every external state change is traceable. Manual triggers are exposed under `/alerts/breach-poll`, `/alerts/scrape-financial`, `/alerts/verify-certs`, `/alerts/sweep` for on-demand runs during demos or incident response.
+Full documentation site lives in [`apps/docs`](./apps/docs) — run with `make docs` → `http://localhost:3001`. 17 pages covering Architecture, Risk Scoring, AI Features, Operations, and API Reference.
 
 ---
 
-## 🔌 Integration recommendations
+## 📜 Credits
 
-The system is designed to be **the source of truth for vendor risk** — not a silo. Here's how it slots into the rest of a TPRM operating model.
-
-### ITSM (ServiceNow / Jira Service Management)
-
-When a CRITICAL or HIGH alert is created, automatically open a remediation ticket on the right queue with a deep link back to the vendor detail page.
-
-- **Pattern**: outbound webhook on `Alert` insert with severity ≥ HIGH. Add a `POST_TO_ITSM=true` env var; add `services/itsm_dispatcher.py` that templates an incident payload (vendor name, alert type, message, due date, deep link to `/vendors/{vendor_id}`) and POSTs to the ITSM API.
-- **Field mapping**:
-  - `Vendor.name` → ITSM `caller_id` (or "Affected vendor")
-  - `Alert.severity` → ITSM `priority` (CRITICAL=1, HIGH=2, MEDIUM=3, LOW=4)
-  - `Alert.message` → ITSM `short_description` + `description`
-  - `Alert.due_date` → ITSM `due_date`
-  - VRM dashboard URL → ITSM `u_external_url` or comment
-- **ServiceNow REST**: `POST /api/now/table/incident` with bearer token; standard 12-field payload
-- **Jira**: `POST /rest/api/3/issue` with `fields.project.key`, `fields.issuetype.name="Incident"`
-- **Round-trip**: subscribe to ITSM webhook → `PATCH /alerts/{id}` to mark `status=resolved` when the ticket closes
-
-### Procurement (SAP Ariba / Coupa / Oracle Procurement)
-
-When a vendor's risk score crosses into CRITICAL, block new POs and require explicit override.
-
-- **Pattern**: outbound webhook on `RiskAssessment` insert with severity=CRITICAL; reverse direction polls Ariba/Coupa nightly for new vendors and seeds `Vendor` rows.
-- **Ariba**: `Supplier API v2` — sync vendor master and feed Ariba's `riskScore` field with our composite score
-- **Coupa**: `/api/suppliers/{id}/extras` — push severity + last assessment date so buyers see the flag at PO time
-- **Approval gates**: require explicit buyer attestation in the dashboard before any PO on a CRITICAL vendor — uses a 2-person rule with audit log row per approval
-
-### SIEM (Splunk / Microsoft Sentinel / Elastic)
-
-Ship every `audit_logs` row + every alert state transition as a structured event for centralised security ops.
-
-- **Pattern**: add `structlog.processors.JSONRenderer()` already in `logging_config.py`, point log shipper at stdout
-- **Splunk HEC**: `POST https://splunk.internal:8088/services/collector/event` with `sourcetype=tprm:audit`
-- **Sentinel**: Azure Monitor Data Collection Endpoint with `vrm-audit` custom log
-- **Use case**: correlate vendor breach alerts with internal SIEM signals (e.g. "we got a CRITICAL on V0276 — search VPC flow logs for outbound traffic to that vendor's IP ranges in the last 24h")
-
-### Identity provider (Okta / Azure AD)
-
-Auto-disable vendor SSO when a CRITICAL alert fires.
-
-- **Pattern**: identity provider webhook → `POST /scim/v2/Users/{vendor_user_id}` with `active=false`
-- **Use case**: covers the brief's "Contractor access never revoked post-project; data sold to competitor" scenario without human action
-
-### GRC platforms (Archer / OneTrust / LogicGate)
-
-Push the full audit pack PDF + structured risk assessment as evidence for compliance attestations.
-
-- **Pattern**: nightly export of `RiskAssessment` table → CSV → SFTP drop OR direct GRC API integration
-- **Use case**: replaces the spreadsheet-driven SOC 2 / SOX 404 evidence collection that's currently manual
-
-### CMDB (ServiceNow CMDB / Device42)
-
-Bi-directional sync of `Vendor.systems_accessed` with the CMDB so "which systems would AcmeCloud's breach affect?" returns a precise list.
-
-- **Pattern**: nightly CMDB pull → upsert into `DataAccess.systems_accessed`
-- **Reverse direction**: when a vendor's risk goes CRITICAL, tag every CMDB-linked CI with `tprm_risk=critical`
-
----
-
-## 🚢 Deployment (recommended)
-
-| Component | Host | Why |
-|---|---|---|
-| `apps/web` | Vercel | Native Next.js host, free tier, instant deploy |
-| `apps/api` | Fly.io or Railway | Single Docker image; auto-scales |
-| Postgres + pgvector | Neon | Free tier ships with pgvector enabled |
-| LLM | Anthropic Claude (prod) · Ollama (local dev) | Provider toggle in env |
-
-Set `NEXT_PUBLIC_API_URL` on Vercel to the Fly URL, configure CORS in `apps/api/src/vrm_api/config.py`, done.
-
----
-
-## 📜 License & credits
-
-Built for the [Société Générale Third-Party Vendor Risk Management hackathon](https://societegenerale.iamneo.ai/third-party-vendor-risk-management/). Option A — AI-Powered Vendor Intelligence. Solo build.
+Built for the [Société Générale Third-Party Vendor Risk Management hackathon](https://societegenerale.iamneo.ai/third-party-vendor-risk-management/) — **Option A: AI-Powered Vendor Intelligence**.

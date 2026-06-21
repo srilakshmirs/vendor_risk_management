@@ -4,7 +4,7 @@
 .PHONY: help install api web docs dev mock-data sample-contracts seed reset llm-info \
         score-all eval eval-json risk-of ask-reindex ask \
         alerts-sweep breach-poll alerts-count audit-pdf enhance \
-        financial-scrape cert-verify pitch-pdf pitch-pptx pitch-html \
+        financial-scrape cert-verify \
         demo-reset \
         test lint format up down logs clean
 
@@ -98,19 +98,6 @@ audit-pdf:  ## Download a vendor audit pack PDF: make audit-pdf VID=V0007
 
 enhance:  ## LLM-enhance the risk narrative for a vendor: make enhance VID=V0276
 	@curl -fsS -X POST "http://localhost:8000/risk/score/$(VID)/enhance" | python3 -m json.tool
-
-# ── Pitch deck (Marp) ──
-pitch-pdf:  ## Render docs/pitch-deck.md → docs/pitch-deck.pdf
-	npx --yes @marp-team/marp-cli@latest --allow-local-files docs/pitch-deck.md -o docs/pitch-deck.pdf
-	@echo "→ docs/pitch-deck.pdf"
-
-pitch-pptx:  ## Render docs/pitch-deck.md → docs/pitch-deck.pptx (editable in PowerPoint/Keynote)
-	npx --yes @marp-team/marp-cli@latest --allow-local-files docs/pitch-deck.md -o docs/pitch-deck.pptx
-	@echo "→ docs/pitch-deck.pptx"
-
-pitch-html:  ## Render docs/pitch-deck.md → docs/pitch-deck.html (open in browser, present with arrow keys)
-	npx --yes @marp-team/marp-cli@latest --allow-local-files docs/pitch-deck.md -o docs/pitch-deck.html
-	@echo "→ docs/pitch-deck.html"
 
 # ── Demo readiness ──
 # Bullet-proof one-command reset before the live demo. Idempotent; safe to re-run.
