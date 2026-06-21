@@ -58,3 +58,11 @@ class VendorDetailOut(VendorOut):
 class VendorListOut(BaseModel):
     total: int
     items: list[VendorOut]
+
+
+class CertStatsOut(BaseModel):
+    cert_type: str
+    certified: int
+    expired: int
+    not_certified: int
+    pending: int
