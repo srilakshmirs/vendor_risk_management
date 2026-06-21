@@ -67,3 +67,11 @@ export function useAlertCounts(config?: SWRConfiguration) {
     ...config,
   });
 }
+
+export function useVendorSboms(vendorCode: string | null, config?: SWRConfiguration) {
+  return useSWR(
+    vendorCode ? ["sboms", vendorCode] : null,
+    () => api.getSboms(vendorCode as string),
+    config,
+  );
+}

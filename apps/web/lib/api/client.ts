@@ -8,6 +8,8 @@ import type {
   EnhanceResponse,
   EvalReport,
   LLMInfo,
+  Sbom,
+  SbomUploadResult,
   ScoredVendor,
   SweepResult,
   VendorDetail,
@@ -132,6 +134,19 @@ export const api = {
   // (preserves Content-Disposition filename + no in-memory blob round-trip).
   auditPackUrl: (vendorCode: string) =>
     `${API_BASE}/audit/pack/${encodeURIComponent(vendorCode)}`,
+
+  // ── SBOM (Software Bill of Materials) ──
+  getSboms: (vendorCode: string) =>
+    request<Sbom[]>(`/sbom/${encodeURIComponent(vendorCode)}`),
+
+  uploadSbom: (vendorCode: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<SbomUploadResult>(
+      `/sbom/${encodeURIComponent(vendorCode)}/upload`,
+      { method: "POST", body: formData, isFormData: true },
+    );
+  },
 };
 
 export { ApiError };

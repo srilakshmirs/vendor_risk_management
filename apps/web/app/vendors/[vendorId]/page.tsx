@@ -24,6 +24,7 @@ import { PageTransition } from "../../../components/PageTransition";
 import { RiskGauge } from "../../../components/RiskGauge";
 import { SeverityBadge } from "../../../components/SeverityBadge";
 import { Skeleton, SkeletonCard, SkeletonLines } from "../../../components/Skeleton";
+import { SupplyChainCard } from "../../../components/SupplyChainCard";
 import { TrafficLight } from "../../../components/TrafficLight";
 import { Topbar } from "../../../components/Topbar";
 import { api } from "../../../lib/api/client";
@@ -413,6 +414,9 @@ export default function VendorDetailPage({
             </div>
           )}
         </div>
+
+        {/* Supply chain (SBOM) */}
+        <SupplyChainCard vendorCode={vendorId} />
 
         {/* Profile + certs + data access */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

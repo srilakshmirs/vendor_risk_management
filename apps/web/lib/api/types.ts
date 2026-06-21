@@ -100,6 +100,36 @@ export interface EnhanceResponse {
   persisted: boolean;
 }
 
+// ── SBOM (Software Bill of Materials) ──
+export type VulnSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "NONE" | string;
+
+export interface SbomVuln {
+  cve_id: string;
+  severity: VulnSeverity;
+  description: string;
+}
+
+export interface SbomComponent {
+  name: string;
+  version: string;
+  type: string | null;
+  highest_severity: VulnSeverity | null;
+  vulnerabilities: SbomVuln[];
+}
+
+export interface Sbom {
+  id: number;
+  format: string;       // CycloneDX | SPDX | Custom
+  version: string | null;
+  created_at: string;
+  components: SbomComponent[];
+}
+
+export interface SbomUploadResult {
+  message: string;
+  [k: string]: unknown;
+}
+
 export interface EvalReport {
   model_version: string;
   total: number;

@@ -1,0 +1,28 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-06-19T08:00:00Z",
+    "tools": [{"vendor": "AcmeBuild", "name": "sbom-gen", "version": "2.1.0"}],
+    "component": {
+      "type": "application",
+      "name": "vendor-platform",
+      "version": "4.7.2"
+    }
+  },
+  "components": [
+    { "type": "library", "name": "log4j-core", "version": "2.14.1" },
+    { "type": "library", "name": "spring-web", "version": "5.3.18" },
+    { "type": "library", "name": "openssl", "version": "1.0.2k" },
+    { "type": "library", "name": "jackson-databind", "version": "2.13.2" },
+    { "type": "library", "name": "commons-text", "version": "1.9" },
+    { "type": "library", "name": "lodash", "version": "4.17.20" },
+    { "type": "library", "name": "axios", "version": "0.21.0" },
+    { "type": "library", "name": "react", "version": "18.2.0" },
+    { "type": "library", "name": "fastapi", "version": "0.115.0" },
+    { "type": "library", "name": "sqlalchemy", "version": "2.0.51" },
+    { "type": "library", "name": "psycopg", "version": "3.2.0" },
+    { "type": "library", "name": "structlog", "version": "24.4.0" }
+  ]
+}
