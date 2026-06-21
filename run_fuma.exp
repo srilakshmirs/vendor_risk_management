@@ -1,6 +1,0 @@
-#!/usr/bin/expect
-set timeout -1
-spawn bunx create-fumadocs-app apps/docs --pm bun --template +next+fuma-docs-mdx --no-git
-expect "Use `/src` directory?"
-send "\r"
-expect eof
