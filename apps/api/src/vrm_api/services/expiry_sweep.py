@@ -178,7 +178,7 @@ def _send_expiry_alert_email(p: _Pending) -> None:
     rows += f"""\
     <tr>
       <td colspan="2" style="padding:20px 0 0;">
-        <a href="http://localhost:3001/vendors/{p.vendor_id}" 
+        <a href="{s.web_base_url}/vendors/{p.vendor_id}"
            style="display:inline-block;background:{sev_color};color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
           View in Dashboard →
         </a>

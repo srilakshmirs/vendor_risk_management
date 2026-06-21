@@ -260,7 +260,7 @@ def build_risk_alert_html(scored: ScoredVendor, vendor: Vendor) -> str:
     rows += f"""\
     <tr>
       <td colspan="2" style="padding:20px 0 0;">
-        <a href="http://localhost:3001/vendors/{vendor.vendor_id}" 
+        <a href="{get_settings().web_base_url}/vendors/{vendor.vendor_id}"
            style="display:inline-block;background:{sev_color};color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
           View in Dashboard →
         </a>
@@ -313,7 +313,7 @@ def build_resolution_html(
     rows += f"""\
     <tr>
       <td colspan="2" style="padding:20px 0 0;">
-        <a href="http://localhost:3001/vendors/{vendor.vendor_id}" 
+        <a href="{get_settings().web_base_url}/vendors/{vendor.vendor_id}"
            style="display:inline-block;background:#16A34A;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
           View in Dashboard →
         </a>
@@ -351,7 +351,7 @@ def build_alert_resolved_html(alert: Alert, vendor: Vendor) -> str:
     rows += f"""\
     <tr>
       <td colspan="2" style="padding:20px 0 0;">
-        <a href="http://localhost:3001/vendors/{vendor.vendor_id}" 
+        <a href="{get_settings().web_base_url}/vendors/{vendor.vendor_id}"
            style="display:inline-block;background:#16A34A;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
           View in Dashboard →
         </a>

@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     api_port: int = 8000
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3001", "http://localhost:3000"])
 
+    # Base URL of the Next.js dashboard. Used to build deep links in outbound
+    # emails ("View in Dashboard"), audit-pack metadata, etc. Override in `.env`
+    # when the web app is deployed somewhere other than localhost.
+    web_base_url: str = "http://localhost:3000"
+
     # --- Database ---
     # Postgres+pgvector (started via `make up` / `docker compose up postgres`).
     # Override with sqlite:///./vrm.db in .env if you want zero-Docker dev.
