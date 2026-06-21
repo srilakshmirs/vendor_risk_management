@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 
@@ -12,6 +13,7 @@ export function KpiCard({
   tone = "neutral",
   className,
   index = 0,
+  href,
 }: {
   label: string;
   value: ReactNode;
@@ -21,6 +23,8 @@ export function KpiCard({
   className?: string;
   /** Used to stagger entrance animation when rendered in a grid */
   index?: number;
+  /** If provided, the card becomes a clickable link */
+  href?: string;
 }) {
   const toneStyles = {
     neutral:
@@ -37,15 +41,16 @@ export function KpiCard({
     bad: "text-red-500",
   }[tone];
 
-  return (
+  const card = (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
       whileHover={{ y: -2 }}
       className={cn(
-        "group rounded-xl border backdrop-blur-md p-5 shadow-sm",
+        "group rounded-xl border backdrop-blur-md p-5 shadow-sm h-full flex flex-col",
         "transition-shadow hover:shadow-md hover:shadow-zinc-900/4 dark:hover:shadow-black/40",
+        href && "cursor-pointer",
         toneStyles,
         className,
       )}
@@ -62,7 +67,7 @@ export function KpiCard({
         {icon && (
           <div
             className={cn(
-              "size-9 rounded-lg grid place-items-center transition-colors",
+              "size-9 rounded-lg grid place-items-center transition-colors shrink-0",
               "bg-zinc-50 dark:bg-zinc-800/60 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800",
               iconTone,
             )}
@@ -71,9 +76,16 @@ export function KpiCard({
           </div>
         )}
       </div>
+      <div className="flex-grow" />
       {hint && (
         <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>
       )}
     </motion.div>
   );
+
+  if (href) {
+    return <Link href={href} className="block h-full no-underline">{card}</Link>;
+  }
+  return card;
 }
+

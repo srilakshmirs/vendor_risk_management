@@ -16,7 +16,7 @@ export function AnimatedNumber({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-20%" });
+  const inView = useInView(ref, { once: true, amount: 0 });
   const mv = useMotionValue(0);
   const rounded = useTransform(mv, (latest) => {
     const n = Math.round(latest);

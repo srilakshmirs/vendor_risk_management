@@ -15,6 +15,7 @@ import type {
   VendorDetail,
   VendorListParams,
   VendorListResponse,
+  CertStats,
 } from "./types";
 
 export const API_BASE =
@@ -73,6 +74,8 @@ export const api = {
   listVendors: (params: VendorListParams = {}) =>
     request<VendorListResponse>(`/vendors${qs(params as Record<string, unknown>)}`),
 
+  getCertStats: () => request<CertStats[]>("/vendors/certifications/stats"),
+
   getVendor: (vendorId: string) =>
     request<VendorDetail>(`/vendors/${encodeURIComponent(vendorId)}`),
 
@@ -101,9 +104,12 @@ export const api = {
 
   eval: () => request<EvalReport>("/risk/eval"),
 
-  extractContract: (file: File) => {
+  extractContract: (file: File, vendorId?: string) => {
     const formData = new FormData();
     formData.append("file", file);
+    if (vendorId) {
+      formData.append("vendor_id", vendorId);
+    }
     return request<any>("/contracts/extract", {
       method: "POST",
       body: formData,

@@ -2,7 +2,8 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,6 +20,7 @@ import { Topbar } from "../../components/Topbar";
 import { useVendors } from "../../lib/api/hooks";
 import { cn } from "../../lib/cn";
 import { fmtUSD } from "../../lib/format";
+import type { Severity } from "../../lib/api/types";
 
 const VENDOR_TYPES = [
   "CloudProvider",
@@ -33,6 +35,7 @@ const VENDOR_TYPES = [
   "Marketing",
 ];
 const TIERS = ["Tier1", "Tier2", "Tier3", "Tier4"];
+const SEVERITY_OPTIONS: ("ALL" | Severity)[] = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"];
 const PAGE_SIZE = 25;
 
 type SortField =
@@ -43,10 +46,28 @@ type SortField =
   | "criticality";
 
 export default function VendorsListPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 grid place-items-center">
+        <Loader2 className="size-6 animate-spin text-zinc-400" />
+      </div>
+    }>
+      <VendorsListContent />
+    </Suspense>
+  );
+}
+
+function VendorsListContent() {
+  const searchParams = useSearchParams();
+  const initialSeverity = (searchParams.get("severity") ?? "ALL") as "ALL" | Severity;
+  const initialMissingCerts = searchParams.get("missing_certs") === "true";
+
   const [q, setQ] = useState("");
   const [vendorType, setVendorType] = useState("");
   const [criticality, setCriticality] = useState("");
+  const [severity, setSeverity] = useState<"ALL" | Severity>(initialSeverity);
   const [underInvestigation, setUnderInvestigation] = useState<boolean | undefined>(undefined);
+  const [missingCertFilter, setMissingCertFilter] = useState<string>(initialMissingCerts ? "any" : "");
   const [sortField, setSortField] = useState<SortField>("preliminary_risk_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
@@ -56,12 +77,15 @@ export default function VendorsListPage() {
       q: q || undefined,
       vendor_type: vendorType || undefined,
       criticality: criticality || undefined,
+      severity: severity === "ALL" ? undefined : severity,
       under_investigation: underInvestigation,
+      missing_certs: missingCertFilter === "any" ? true : undefined,
+      missing_cert_type: ["SOC2", "ISO27001", "PCI-DSS"].includes(missingCertFilter) ? missingCertFilter : undefined,
       sort: `${sortField}:${sortDir}`,
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
     }),
-    [q, vendorType, criticality, underInvestigation, sortField, sortDir, page],
+    [q, vendorType, criticality, severity, underInvestigation, missingCertFilter, sortField, sortDir, page],
   );
 
   const { data, isLoading } = useVendors(params);
@@ -82,9 +106,13 @@ export default function VendorsListPage() {
     setQ("");
     setVendorType("");
     setCriticality("");
+    setSeverity("ALL");
     setUnderInvestigation(undefined);
+    setMissingCertFilter("");
     setPage(0);
   };
+
+  const hasFilters = q || vendorType || criticality || severity !== "ALL" || underInvestigation !== undefined || missingCertFilter !== "";
 
   return (
     <>
@@ -95,6 +123,24 @@ export default function VendorsListPage() {
 
       <PageTransition>
       <div className="px-8 py-6 space-y-4">
+        {/* Severity filter pills */}
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md p-3 flex flex-wrap items-center gap-2 shadow-sm">
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500 mr-1">
+            Severity
+          </span>
+          {SEVERITY_OPTIONS.map((s) => (
+            <SeverityPill
+              key={s}
+              severity={s}
+              active={severity === s}
+              onClick={() => {
+                setSeverity(s);
+                setPage(0);
+              }}
+            />
+          ))}
+        </div>
+
         {/* Filters */}
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md p-4 flex flex-wrap items-center gap-3 shadow-sm">
           <div className="relative flex-1 min-w-[220px]">
@@ -153,7 +199,23 @@ export default function VendorsListPage() {
             label="Under investigation"
           />
 
-          {(q || vendorType || criticality || underInvestigation !== undefined) && (
+          <div className="min-w-[170px]">
+            <Select
+              value={missingCertFilter}
+              onChange={(e) => {
+                setMissingCertFilter(e.target.value);
+                setPage(0);
+              }}
+            >
+              <option value="">All Certifications</option>
+              <option value="any">Any Missing/Expired</option>
+              <option value="SOC2">Missing SOC2</option>
+              <option value="ISO27001">Missing ISO27001</option>
+              <option value="PCI-DSS">Missing PCI-DSS</option>
+            </Select>
+          </div>
+
+          {hasFilters && (
             <button
               onClick={resetFilters}
               className="ml-auto text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline"
@@ -317,6 +379,60 @@ export default function VendorsListPage() {
   );
 }
 
+// ── Severity pill ─────────────────────────────────────────────────────
+function SeverityPill({
+  severity,
+  active,
+  onClick,
+}: {
+  severity: "ALL" | Severity;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const colors: Record<string, { active: string; inactive: string }> = {
+    ALL: {
+      active: "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
+      inactive: "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+    },
+    CRITICAL: {
+      active: "bg-red-600 text-white dark:bg-red-500 dark:text-white",
+      inactive: "text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/40",
+    },
+    HIGH: {
+      active: "bg-orange-500 text-white dark:bg-orange-500 dark:text-white",
+      inactive: "text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-900 hover:bg-orange-50 dark:hover:bg-orange-950/40",
+    },
+    MEDIUM: {
+      active: "bg-amber-500 text-white dark:bg-amber-500 dark:text-white",
+      inactive: "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/40",
+    },
+    LOW: {
+      active: "bg-blue-500 text-white dark:bg-blue-500 dark:text-white",
+      inactive: "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950/40",
+    },
+    NONE: {
+      active: "bg-emerald-500 text-white dark:bg-emerald-500 dark:text-white",
+      inactive: "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40",
+    },
+  };
+
+  const c = (colors[severity] ?? colors.ALL)!;
+
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-150",
+        active
+          ? cn(c.active, "border-transparent shadow-sm")
+          : cn(c.inactive, "border-zinc-200 dark:border-zinc-700"),
+      )}
+    >
+      {severity}
+    </button>
+  );
+}
+
 function SortableTh({
   field,
   active,
@@ -351,3 +467,4 @@ function SortableTh({
     </th>
   );
 }
+

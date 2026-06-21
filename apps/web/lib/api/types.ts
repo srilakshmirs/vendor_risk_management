@@ -156,12 +156,23 @@ export interface VendorListParams {
   vendor_type?: string;
   country?: string;
   criticality?: string;
+  severity?: string;
   min_risk?: number;
   max_risk?: number;
   under_investigation?: boolean;
+  missing_certs?: boolean;
+  missing_cert_type?: string;
   sort?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface CertStats {
+  cert_type: string;
+  certified: number;
+  expired: number;
+  not_certified: number;
+  pending: number;
 }
 
 export interface AskCitation {

@@ -8,6 +8,7 @@ import {
   Loader2,
   ShieldAlert,
   XCircle,
+  FileX,
 } from "lucide-react";
 import useSWR from "swr";
 
@@ -18,8 +19,9 @@ import { RiskBar } from "../components/RiskBar";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { SeverityDonut, SeverityLegend } from "../components/SeverityDonut";
 import { Topbar } from "../components/Topbar";
+import { CertChart } from "../components/CertChart";
 import { api } from "../lib/api/client";
-import { useEval } from "../lib/api/hooks";
+import { useEval, useCertStats } from "../lib/api/hooks";
 import { fmtPct } from "../lib/format";
 import type { Severity, Vendor } from "../lib/api/types";
 
@@ -29,6 +31,13 @@ function useSeverityCounts() {
   return useSWR("severity-counts", async () => {
     const ev = await api.eval();
     return ev.support_by_severity;
+  });
+}
+
+function useMissingCertsCount() {
+  return useSWR("missing-certs-count", async () => {
+    const res = await api.listVendors({ missing_certs: true, limit: 1 });
+    return res.total;
   });
 }
 
@@ -45,6 +54,8 @@ export default function PortfolioPage() {
   const { data: ev } = useEval();
   const { data: counts } = useSeverityCounts();
   const { data: top } = useTopRisky();
+  const { data: missingCertsCount } = useMissingCertsCount();
+  const { data: certStats } = useCertStats();
 
   const criticalCount = counts?.CRITICAL ?? 0;
   const highCount = counts?.HIGH ?? 0;
@@ -59,13 +70,14 @@ export default function PortfolioPage() {
       <PageTransition>
       <div className="px-8 py-6 space-y-6">
         {/* KPI strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <KpiCard
             index={0}
             label="Total Vendors"
-            value={ev ? <AnimatedNumber value={ev.total} /> : "—"}
+            value={<AnimatedNumber value={ev?.total ?? 0} />}
             icon={<Building2 className="size-5" />}
             hint="100% coverage across the registry"
+            href="/vendors"
           />
           <KpiCard
             index={1}
@@ -74,6 +86,7 @@ export default function PortfolioPage() {
             tone={criticalCount > 0 ? "bad" : "good"}
             icon={<AlertOctagon className="size-5" />}
             hint="Immediate action — breach + sensitive access"
+            href="/vendors?severity=CRITICAL"
           />
           <KpiCard
             index={2}
@@ -82,19 +95,25 @@ export default function PortfolioPage() {
             tone={highCount > 0 ? "warn" : "good"}
             icon={<ShieldAlert className="size-5" />}
             hint="Remediate within 7 days"
+            href="/vendors?severity=HIGH"
           />
           <KpiCard
             index={3}
+            label="Missing Certs"
+            value={<AnimatedNumber value={missingCertsCount ?? 0} />}
+            tone={(missingCertsCount ?? 0) > 0 ? "warn" : "good"}
+            icon={<FileX className="size-5" />}
+            hint="Vendors with expired/missing certs"
+            href="/vendors?missing_certs=true"
+          />
+          <KpiCard
+            index={4}
             label="Anomaly Accuracy"
             value={
-              ev ? (
-                <AnimatedNumber
-                  value={ev.anomaly_accuracy * 100}
-                  format={(n) => `${n.toFixed(0)}%`}
-                />
-              ) : (
-                "—"
-              )
+              <AnimatedNumber
+                value={(ev?.anomaly_accuracy ?? 0) * 100}
+                format={(n) => `${n.toFixed(0)}%`}
+              />
             }
             tone={ev && ev.anomaly_accuracy >= 0.8 ? "good" : "warn"}
             icon={<CheckCircle2 className="size-5" />}
@@ -104,26 +123,49 @@ export default function PortfolioPage() {
 
         {/* Distribution + Rubric panel */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
-            <div className="flex items-baseline justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold">Severity Distribution</h2>
-                <p className="text-sm text-zinc-500">
-                  Ranked risk register — tiered response model
-                </p>
+          <div className="lg:col-span-2 space-y-4">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+              <div className="flex items-baseline justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Severity Distribution</h2>
+                  <p className="text-sm text-zinc-500">
+                    Ranked risk register — tiered response model
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                {counts ? (
+                  <>
+                    <SeverityDonut counts={counts as Record<Severity, number>} />
+                    <SeverityLegend counts={counts as Record<Severity, number>} />
+                  </>
+                ) : (
+                  <div className="h-64 grid place-items-center md:col-span-2">
+                    <Loader2 className="size-6 animate-spin text-zinc-400" />
+                  </div>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-              {counts ? (
-                <>
-                  <SeverityDonut counts={counts as Record<Severity, number>} />
-                  <SeverityLegend counts={counts as Record<Severity, number>} />
-                </>
-              ) : (
-                <div className="h-64 grid place-items-center md:col-span-2">
-                  <Loader2 className="size-6 animate-spin text-zinc-400" />
+
+            {/* Certifications breakdown */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+              <div className="flex items-baseline justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Certifications</h2>
+                  <p className="text-sm text-zinc-500">
+                    Compliance posture by standard
+                  </p>
                 </div>
-              )}
+              </div>
+              <div className="grid grid-cols-1 items-center">
+                {certStats ? (
+                  <CertChart data={certStats} />
+                ) : (
+                  <div className="h-64 grid place-items-center">
+                    <Loader2 className="size-6 animate-spin text-zinc-400" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

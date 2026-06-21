@@ -28,6 +28,13 @@ export function useVendors(params: VendorListParams = {}, config?: SWRConfigurat
   });
 }
 
+export function useCertStats(config?: SWRConfiguration) {
+  return useSWR("cert-stats", fetcherBase(api.getCertStats), {
+    keepPreviousData: true,
+    ...config,
+  });
+}
+
 export function useVendor(vendorId: string | null, config?: SWRConfiguration) {
   return useSWR(
     vendorId ? ["vendor", vendorId] : null,

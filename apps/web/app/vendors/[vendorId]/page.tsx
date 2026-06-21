@@ -64,8 +64,9 @@ export default function VendorDetailPage({
     if (!file) return;
     setIsExtracting(true);
     try {
-      const result = await api.extractContract(file);
-      setExtractedContract(result);
+      const result = await api.extractContract(file, vendorId);
+      // The backend returns { fields: {...}, source_filename: "..." }
+      setExtractedContract(result.fields || result);
     } catch (err) {
       alert("Failed to extract contract. Check console for details.");
       console.error(err);
