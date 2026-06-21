@@ -1,0 +1,140 @@
+---
+title: LLM Providers
+description: One env var picks Ollama, Claude, or a mock. The rest of the codebase calls `get_llm()` and never branches on provider name.
+---
+
+The system uses LLMs for **four** purposes:
+
+1. **Contract extraction** — structured JSON from PDF text (`/contracts/extract`)
+2. **Risk narratives** — single-paragraph TPRM-analyst summary (`/risk/score/{id}/enhance`)
+3. **Streaming Q&A** — SSE token stream over RAG context (`/ask/stream`)
+4. **Startup warmup** — pre-load model into VRAM (`services/warmup.py`)
+
+All four paths import from one place:
+
+```python
+from vrm_api.llm import get_llm
+llm = get_llm()
+```
+
+`get_llm()` is a singleton that returns one of three concrete providers based on `LLM_PROVIDER`.
+
+## The abstraction
+
+```python
+# apps/api/src/vrm_api/llm/base.py
+class LLMProvider(ABC):
+    name: str
+
+    async def complete(self, system, user, *, max_tokens, temperature, prefer_smart) -> LLMResponse: ...
+    async def extract_json(self, system, user, schema_hint, *, max_tokens, prefer_smart) -> dict: ...
+    async def stream(self, system, user, *, max_tokens, temperature, prefer_smart) -> AsyncIterator[str]: ...
+```
+
+Every provider implements these three methods. The `prefer_smart` flag opts into a higher-quality model when the provider has one (Sonnet 4.6 on Claude). On Ollama or mock it's a no-op.
+
+## Provider matrix
+
+| Feature | Ollama | Claude | Mock |
+|---|---|---|---|
+| Cost | $0 | ~$0.01 / demo | $0 |
+| Network required | no (local daemon) | yes (api.anthropic.com) | no |
+| Narrative latency | ~30 s | ~3 s (Haiku) · ~8 s (Sonnet) | &lt;50 ms |
+| Streaming | yes | yes | yes (canned) |
+| JSON-mode | yes (native `format: json`) | yes (via prompt + regex strip) | yes (canned dict) |
+| Embeddings | _no — daemon limitation_ | _no — Claude has no embeddings API_ | n/a |
+| Prompt caching | n/a | yes (5-min TTL on system prompt) | n/a |
+| Best for | local dev, free demos | production, fast demos, judge demos | CI, eval, no-network |
+
+> **Embeddings** are handled by [fastembed](/docs/ai/streaming-qa#embeddings) regardless of LLM choice — it's a separate concern from text generation.
+
+## Ollama
+
+```bash
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:latest
+```
+
+Talks to a local Ollama daemon via `POST /api/chat`. Uses native `format: "json"` mode for `extract_json()`.
+
+**Streaming** uses Ollama's `stream: true` mode and yields token chunks as they arrive.
+
+**Demo timing**: a 175-token risk narrative takes ~30 s on llama3.2:latest on an M-series Mac. Acceptable for local demos; **upgrade to Claude for live judging**.
+
+## Claude
+
+```bash
+LLM_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-...
+CLAUDE_MODEL_FAST=claude-haiku-4-5-20251001
+CLAUDE_MODEL_SMART=claude-sonnet-4-6
+```
+
+Uses the `anthropic` SDK. Three optimizations baked in:
+
+1. **Two-model split** — Haiku 4.5 for high-volume work (contract extraction, regular narratives), Sonnet 4.6 when `prefer_smart=True`
+2. **Ephemeral prompt cache** on the system prompt for `/ask` — the system prompt is identical across questions in a 5-min window, so only the per-question delta is billed
+3. **Async streaming** via `client.messages.stream()`
+
+**Demo timing**: sub-3-second risk narratives on Haiku, sub-1-second `/ask` token streams.
+
+## Mock
+
+```bash
+LLM_PROVIDER=mock
+```
+
+No external calls. Returns canned strings. Used by:
+
+- `pytest` — keeps the test suite at &lt;1 s
+- `make eval` — the rubric evaluation doesn't need LLM (deterministic scoring)
+- `make demo-reset` with mock — full pipeline in ~14 s instead of ~75 s
+- CI — no API keys needed
+
+The mock provider still exercises the full code path (request/response shape, streaming via async generator) — it's a proper test double, not a stub.
+
+## Selection logic
+
+```python
+# apps/api/src/vrm_api/llm/factory.py
+def get_llm() -> LLMProvider:
+    global _provider
+    if _provider is not None:
+        return _provider
+    choice = settings.llm_provider
+    if choice == "claude":
+        if not settings.anthropic_api_key:
+            log.warning("ANTHROPIC_API_KEY empty — falling back to mock")
+            _provider = MockProvider()
+        else:
+            _provider = ClaudeProvider(...)
+    elif choice == "ollama":
+        _provider = OllamaProvider(...)
+    elif choice == "mock":
+        _provider = MockProvider()
+    return _provider
+```
+
+The factory **falls back to mock** if `LLM_PROVIDER=claude` is set without an API key. This means the API never crashes on misconfig — it just degrades to canned responses.
+
+## Verifying which provider is live
+
+```bash
+curl http://localhost:8000/llm/info
+```
+
+```json
+{
+  "provider": "ollama",
+  "model": "llama3.2:latest",
+  "available": true,
+  "detail": "ready"
+}
+```
+
+The dashboard's topbar also shows this — see the **LLM: ollama · llama3.2:latest 🟢** pill.
+
+## Adding a fourth provider
+
+Implement `LLMProvider`, drop into `apps/api/src/vrm_api/llm/`, register in `factory.py`. ~30 lines. The rest of the codebase keeps working unchanged because nothing branches on provider name outside the factory.

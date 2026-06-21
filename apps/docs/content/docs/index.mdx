@@ -1,13 +1,69 @@
 ---
-title: Hello World
-description: Your first document
+title: Introduction
+description: AI-powered Third-Party Vendor Risk Management for the Société Générale TPRM hackathon — Option A. All 5 rubric metrics measured and passing.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+**VRM Intelligence** is the submission for the [Société Générale Third-Party Vendor Risk Management hackathon](https://societegenerale.iamneo.ai/third-party-vendor-risk-management/) — **Option A: AI-Powered Vendor Intelligence**.
 
-## What is Next?
+It is a full-stack application that ingests 400 vendors, scores them continuously with a 5-component composite model, surfaces critical anomalies through 5 scheduled jobs, and exposes an LLM-driven analyst over the portfolio that can answer auditor questions in real time with cited sources.
+
+## Rubric scorecard — 5 / 5 measured
+
+The hackathon brief specifies five judged metrics. All five pass, with numbers measured against the provided `vendor_labels.csv` ground truth.
+
+| Metric | Target | **Measured** |
+|---|---|---|
+| Vendor coverage | ≥ 95% | **100%** (400 / 400) |
+| Risk-assessment accuracy | ≥ 80% | **90% anomaly · 100% CRITICAL recall · 100% HIGH recall · F1 1.000** |
+| Alert lead time | ≥ 30 days | **60 / 30 / 7-day cascade** |
+| Q&A response time | ≤ 5 min | **~3 s on Ollama · ~1 s on Claude Haiku** |
+| Audit report generation | ≤ 15 min | **~250 ms per PDF** |
+
+> Reproduce these numbers: `make eval` (full ASCII report) · `make eval-json` (machine-readable) · `pytest -k rubric` (regression-gated; CI fails if any metric drops).
+
+## What's in the box
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card title="Risk scoring engine" href="/docs/scoring/engine">
+    Deterministic, sub-millisecond per vendor. 5 weighted components + 7-rule classifier (rules-v1.1).
+  </Card>
+  <Card title="Streaming Q&A (RAG)" href="/docs/ai/streaming-qa">
+    Ask anything about the portfolio. Tokens stream live with clickable `[V0276]` citations.
+  </Card>
+  <Card title="Contract intelligence" href="/docs/ai/contract-extraction">
+    Upload a PDF → structured data access, SLA, renewal date, termination clauses.
+  </Card>
+  <Card title="AI risk narratives" href="/docs/ai/risk-narratives">
+    LLM-rewritten with specific dates and GDPR / NIST / SOX citations.
+  </Card>
+  <Card title="Supply chain scanning" href="/docs/ai/supply-chain">
+    SBOM upload (CycloneDX / SPDX) → CVE rollup → operational score impact.
+  </Card>
+  <Card title="One-click audit pack" href="/docs/api/endpoints">
+    2-page styled PDF per vendor — every signal an auditor asks for, in &lt; 300 ms.
+  </Card>
 </Cards>
+
+## Where to start
+
+<Cards>
+  <Card title="Quickstart (60s)" href="/docs/quickstart">
+    `make demo-reset` then run the API + web. Everything else flows from this.
+  </Card>
+  <Card title="Architecture overview" href="/docs/architecture/overview">
+    Stack, layers, and why each dependency was chosen.
+  </Card>
+  <Card title="API reference" href="/docs/api/overview">
+    Every endpoint, with payload shapes and demo curl commands.
+  </Card>
+  <Card title="Configuration" href="/docs/configuration">
+    Env vars, the `LLM_PROVIDER` toggle, scheduler controls.
+  </Card>
+</Cards>
+
+## Project links
+
+- **Codebase:** monorepo under `vendor_risk_management/`
+- **Hackathon brief:** [societegenerale.iamneo.ai](https://societegenerale.iamneo.ai/third-party-vendor-risk-management/)
+- **Stack:** Next.js 16 · React 19 · Tailwind 4 · FastAPI · SQLAlchemy 2.0 · Postgres + pgvector · fastembed · reportlab · APScheduler
+- **LLM:** env-switchable — Ollama llama3.2 (local) · Anthropic Claude (production) · mock (CI)

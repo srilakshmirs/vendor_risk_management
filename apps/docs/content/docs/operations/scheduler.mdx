@@ -1,0 +1,131 @@
+---
+title: Scheduler
+description: APScheduler runs 5 jobs inside the FastAPI lifespan. Continuous monitoring without a separate worker process.
+---
+
+The brief calls out:
+
+> "Manual quarterly monitoring is impractical at scale."
+> "Continuous monitoring: detect changes in vendor risk status."
+
+We satisfy this with **APScheduler** running 5 jobs inside the FastAPI process. No Celery, no Redis broker, no separate worker container.
+
+## The 5 jobs
+
+| Job ID | Frequency | What it does |
+|---|---|---|
+| `expiry_sweep` | hourly | Scans certs + contracts, raises 60/30/7-day expiry alerts |
+| `breach_poll` | every 6 hours | Polls `data/breach_feed.json` for new breach events |
+| `financial_scrape` | daily 04:00 UTC | Polls `data/financial_signals.json` for credit / regulatory news |
+| `cert_verify` | weekly Mon 02:00 UTC | Polls `data/cert_verifications.json` for SOC 2 / ISO / PCI status changes |
+| `daily_rescore` | daily 03:00 UTC | Full `score_all` run — refreshes every vendor's `RiskAssessment` |
+
+Files: `apps/api/src/vrm_api/services/{scheduler,expiry_sweep,breach_feed,financial_scraper,cert_verifier}.py`.
+
+## Lifespan integration
+
+```python
+# apps/api/src/vrm_api/main.py
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    scheduler_service.start()           # ← jobs registered + started
+    if settings.warmup_on_startup:
+        app.state.warmup_task = asyncio.create_task(warmup_all(), name="warmup")
+    try:
+        yield
+    finally:
+        scheduler_service.shutdown()    # ← graceful cancel on SIGTERM
+```
+
+The scheduler is part of the API process. When uvicorn shuts down, the scheduler stops cleanly.
+
+## Disable for tests / eval
+
+```bash
+RUN_SCHEDULER=false make api
+# or
+RUN_SCHEDULER=false uv run pytest
+```
+
+The eval harness and CI never need the scheduler running. The flag short-circuits `scheduler.start()` to a no-op.
+
+## Manual triggers
+
+Every job has a manual-trigger endpoint, useful for live demos:
+
+| Endpoint | Triggers |
+|---|---|
+| `POST /alerts/sweep` | Expiry sweep |
+| `POST /alerts/breach-poll` | Breach feed poll |
+| `POST /alerts/scrape-financial` | Financial scraper |
+| `POST /alerts/verify-certs` | Cert verifier |
+| `POST /risk/score-all` | Daily rescore |
+
+```bash
+make alerts-sweep          # or curl POST /alerts/sweep
+make breach-poll
+make financial-scrape
+make cert-verify
+make score-all
+```
+
+Or all five in one go:
+
+```bash
+make demo-reset
+```
+
+## Idempotency
+
+Every job is idempotent. Re-running back-to-back is safe:
+
+- **Expiry sweep** — dedupes by `(vendor, alert_type, due_date)` within a 24h window
+- **Breach poll** — dedupes by `(source, vendor_id, detected_at)`
+- **Financial scraper** — only acts on score deltas ≥ 15 points
+- **Cert verifier** — only acts when status or expiry_date actually changed
+- **Daily rescore** — wipes + reinserts `risk_assessments` (use `replace=True`)
+
+## Job status
+
+```bash
+curl http://localhost:8000/alerts/scheduler/status
+```
+
+```json
+{
+  "jobs": [
+    { "id": "expiry_sweep", "name": "Cert + contract expiry sweep", "next_run_time": "2026-06-21T15:00:00+00:00" },
+    { "id": "breach_poll", "name": "Breach feed poll", "next_run_time": "2026-06-21T18:00:00+00:00" },
+    { "id": "financial_scrape", "name": "Public records financial health poll", "next_run_time": "2026-06-22T04:00:00+00:00" },
+    { "id": "cert_verify", "name": "Third-party certification verification", "next_run_time": "2026-06-23T02:00:00+00:00" },
+    { "id": "daily_rescore", "name": "Daily risk rescore", "next_run_time": "2026-06-22T03:00:00+00:00" }
+  ]
+}
+```
+
+## Demo beat: live breach feed
+
+The single most memorable demo moment uses the manual breach-feed trigger.
+
+1. Open `/alerts` in the dashboard
+2. Click the **Poll breach feed** button (top right of the toolbar)
+3. ~5 seconds later:
+   - Topbar's red **CRITICAL** badge pulses
+   - Two new CRITICAL alerts (V0276 ransomware + V0007 password dump) appear in the table with motion stagger
+   - Affected vendor scores auto-rescore (their composite jumps)
+4. Click a CRITICAL alert → drills into the vendor → narrative now mentions the breach
+
+This compresses what should be a 6-hour scheduler cycle into 5 seconds of demo time.
+
+## Production swap
+
+In production every JSON poller becomes an HTTP poller — same function signature, same idempotency keys, different data source:
+
+| Mock feed | Production swap |
+|---|---|
+| `data/breach_feed.json` | HIBP API · CISA-KEV RSS · vendor disclosure mailing lists |
+| `data/financial_signals.json` | Bloomberg API · Moody's · DnB · S&P · national credit bureaus |
+| `data/cert_verifications.json` | AICPA SOC registry · BSI · Schellman · Coalfire QSA APIs |
+
+The schema is intentionally identical so the swap is a one-function change inside each `services/*.py`. The downstream pipeline (alerts, re-scoring, dashboard surfacing) doesn't change at all.

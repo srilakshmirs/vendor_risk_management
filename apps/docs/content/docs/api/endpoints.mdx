@@ -1,0 +1,138 @@
+---
+title: Endpoints
+description: Every route in the API, grouped by router. Use the live Swagger UI for try-it-out — this page is the printable cheat sheet.
+---
+
+The live interactive schema is at http://localhost:8000/docs. Use that when you want to try requests. This page is the quick-reference.
+
+## Health
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/healthz` | Liveness probe — returns version + environment |
+| `GET` | `/readyz` | Readiness probe (currently same as healthz; production would probe DB + LLM) |
+| `GET` | `/llm/info` | Reports the active LLM provider + a 1-word health probe |
+
+## Vendors
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/vendors` | List with filters (`q`, `vendor_type`, `country`, `criticality`, `min_risk`, `max_risk`, `under_investigation`), sort, pagination |
+| `GET` | `/vendors/{vendor_id}` | Detail — vendor + relationships (certs, data_access, latest_risk) |
+
+```bash
+curl 'http://localhost:8000/vendors?sort=preliminary_risk_score:desc&limit=10'
+curl  'http://localhost:8000/vendors/V0276'
+```
+
+## Risk scoring
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/risk/score/{vendor_id}?persist=true` | Synchronous score — deterministic, sub-millisecond |
+| `GET` | `/risk/score/{vendor_id}/latest` | Most recent persisted `RiskAssessment` (with narrative provenance) |
+| `POST` | `/risk/score/{vendor_id}/enhance` | LLM-enhance the narrative + persist provenance metadata |
+| `POST` | `/risk/score-all?async_mode=false` | Score every vendor in the DB |
+| `GET` | `/risk/eval` | Run the eval harness against `vendor_labels.csv`, return rubric pass/fail |
+
+```bash
+curl -X POST http://localhost:8000/risk/score/V0276
+curl -X POST http://localhost:8000/risk/score/V0276/enhance
+curl http://localhost:8000/risk/eval | jq .rubric_pass
+```
+
+## Alerts
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/alerts` | List with filters (`q`, `severity`, `status`, `vendor_code`, `alert_type`) |
+| `GET` | `/alerts/count` | Aggregate counts — `open_critical`, `open_high`, by_severity, by_type |
+| `PATCH` | `/alerts/{id}` | Update `status` (open / ack / resolved) |
+| `POST` | `/alerts/sweep` | Manually trigger expiry sweep |
+| `POST` | `/alerts/breach-poll` | Manually poll breach feed |
+| `POST` | `/alerts/scrape-financial` | Manually run public-records financial scraper |
+| `POST` | `/alerts/verify-certs` | Manually run third-party cert verifier |
+| `GET` | `/alerts/scheduler/status` | List active scheduled jobs + next-run times |
+
+```bash
+curl http://localhost:8000/alerts/count
+curl 'http://localhost:8000/alerts?severity=CRITICAL&status=open'
+curl -X PATCH http://localhost:8000/alerts/42 \
+  -H 'Content-Type: application/json' \
+  -d '{"status": "ack"}'
+```
+
+## Contracts (LLM)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/contracts/extract` | Upload PDF → structured JSON. Optional `vendor_id` form field persists to `Contract.extracted_terms`. |
+
+```bash
+curl -X POST http://localhost:8000/contracts/extract \
+  -F "file=@data/contracts/sample-msa.pdf" \
+  -F "vendor_id=V0276"
+```
+
+## Ask (RAG streaming)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/ask` | Synchronous variant — returns full answer + citations |
+| `POST` | `/ask/stream` | SSE stream — `citations` event, then `token` deltas, then `done` |
+| `POST` | `/ask/reindex` | Rebuild embeddings for every vendor |
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "Which vendors are CRITICAL?", "k": 8}'
+```
+
+```bash
+# SSE stream — pipe through curl --no-buffer
+curl --no-buffer -N -X POST http://localhost:8000/ask/stream \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "Vendors with PII + expired SOC 2?", "k": 8}'
+```
+
+## Audit (PDF export)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/audit/pack/{vendor_id}` | Stream a 2-page styled PDF audit pack |
+
+```bash
+curl -OJ http://localhost:8000/audit/pack/V0276
+# → audit-V0276-2026-06-21.pdf
+```
+
+The response includes `Content-Disposition: attachment; filename="..."` so browsers download it directly.
+
+## SBOM (supply chain)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/sbom/{vendor_id}/upload` | Upload CycloneDX / SPDX JSON — parses, looks up CVEs, persists, re-scores vendor |
+| `GET` | `/sbom/{vendor_id}` | Get latest SBOM + per-component vulnerabilities |
+
+```bash
+curl -X POST http://localhost:8000/sbom/V0276/upload \
+  -F "file=@data/sboms/sample-cyclonedx.json"
+
+curl http://localhost:8000/sbom/V0276
+```
+
+## Try in the dashboard
+
+Every endpoint above also has a UI affordance:
+
+- **`GET /vendors`** → `/vendors` page (table)
+- **`GET /vendors/{id}`** → `/vendors/{id}` page (detail)
+- **`POST /risk/score/{id}/enhance`** → ✨ Enhance button on vendor detail
+- **`POST /contracts/extract`** → Upload PDF button on vendor detail
+- **`POST /ask/stream`** → `/ask` page (chat UI)
+- **`GET /alerts`** → `/alerts` page (filtered table)
+- **`POST /alerts/*-poll`** → buttons in `/alerts` toolbar
+- **`GET /audit/pack/{id}`** → Export Audit Pack button on vendor detail
+- **`POST /sbom/{id}/upload`** → Upload SBOM button on Supply Chain card
+- **`GET /risk/eval`** → `/eval` page (rubric gates + bars)

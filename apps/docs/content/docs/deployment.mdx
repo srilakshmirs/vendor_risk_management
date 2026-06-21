@@ -1,0 +1,139 @@
+---
+title: Deployment
+description: Recommended hosts, environment setup, and the production hardening list for taking this beyond a hackathon submission.
+---
+
+## Recommended stack
+
+| Component | Host | Why |
+|---|---|---|
+| `apps/web` | **Vercel** | Native Next.js host, instant deploy, free tier |
+| `apps/api` | **Fly.io** or **Railway** | Single Dockerfile, auto-scales, free tier |
+| Postgres + pgvector | **Neon** | Serverless Postgres with pgvector enabled |
+| LLM (production) | **Anthropic Claude** | Sub-3-second narratives, Sonnet 4.6 quality |
+| LLM (local dev) | **Ollama** | Free, offline, swap with one env var |
+
+Everything else (scheduler, RAG, audit PDF, alerts) runs inside the API container — no separate workers, queues, or stateful services to deploy.
+
+## Web (Vercel)
+
+```bash
+cd apps/web
+vercel deploy --prod
+```
+
+Set environment variables in the Vercel dashboard:
+
+```
+NEXT_PUBLIC_API_URL=https://your-api.fly.dev
+```
+
+That's it. Vercel auto-detects Next.js 16.
+
+## API (Fly.io)
+
+```bash
+cd apps/api
+fly launch --no-deploy   # generates fly.toml
+fly secrets set \
+  DATABASE_URL=postgresql+psycopg://... \
+  LLM_PROVIDER=claude \
+  ANTHROPIC_API_KEY=sk-ant-... \
+  CORS_ORIGINS='["https://your-web.vercel.app"]'
+fly deploy
+```
+
+The `Dockerfile` is already multi-stage with `uv` — production image is ~250 MB.
+
+## Postgres (Neon)
+
+```bash
+# In the Neon dashboard:
+#   1. Create project + database "vrm"
+#   2. Enable extensions: vector, pg_trgm, pgcrypto
+#   3. Copy the connection string
+
+fly secrets set DATABASE_URL="postgresql+psycopg://user:pass@ep-...neon.tech/vrm?sslmode=require"
+```
+
+Run migrations + seed:
+
+```bash
+DATABASE_URL=... uv run python -m vrm_api.seeds.ingest_csv --reset
+DATABASE_URL=... uv run python -m vrm_api.scoring.score_all --replace
+DATABASE_URL=... uv run python -m vrm_api.rag.indexer
+```
+
+## CORS
+
+Update `CORS_ORIGINS` in the API to include your Vercel host:
+
+```bash
+fly secrets set CORS_ORIGINS='["https://your-web.vercel.app","http://localhost:3000"]'
+```
+
+## Production hardening checklist
+
+This is what we'd add to go beyond hackathon to real bank infrastructure. None of these are needed for the submission — they're the road map.
+
+### Security
+
+- [ ] **Auth** — Okta / Azure AD SSO + per-route scope checks
+- [ ] **Secrets management** — env vars → AWS Secrets Manager / Vault
+- [ ] **Encryption at rest** — Neon supports it natively
+- [ ] **Encryption in transit** — TLS everywhere (Fly + Vercel give this free)
+- [ ] **IP allowlist** — restrict admin endpoints to corporate VPN ranges
+- [ ] **Rate limiting** — `/ask` is LLM-expensive; add token-bucket per user
+- [ ] **CSRF protection** — Next.js + same-origin cookies + double-submit token
+- [ ] **Pen test** — before any vendor data goes near prod
+
+### Reliability
+
+- [ ] **HA Postgres** — Neon's branching + read replicas
+- [ ] **Backup/restore drills** — quarterly tested
+- [ ] **DR plan** — RPO + RTO targets, alternate region
+- [ ] **Health monitoring** — Datadog / Grafana on `/healthz` + uvicorn metrics
+- [ ] **SLO tracking** — `/ask` p99 < 5s, `/audit/pack` p99 < 1s
+- [ ] **Circuit breakers** — wrap LLM calls so a slow Claude doesn't cascade
+- [ ] **Graceful shutdown** — already handled (lifespan cancels scheduler)
+
+### Operations
+
+- [ ] **Structured logs** — already shipped (`structlog` JSON in prod mode)
+- [ ] **Audit trail** — already shipped (`audit_logs` table)
+- [ ] **CI/CD** — GitHub Actions: lint + typecheck + pytest on PR; auto-deploy on merge
+- [ ] **Alembic migrations** — replace `Base.metadata.create_all()` with versioned migrations
+- [ ] **OpenTelemetry** — distributed tracing across web → API → Postgres
+- [ ] **Sentry** — error tracking with breadcrumbs
+
+### Compliance
+
+- [ ] **SOC 2 attestation** — for the system itself, not just vendors
+- [ ] **Data residency controls** — EU vs US Postgres clusters
+- [ ] **GDPR data export** — `/me/data-export` endpoint for subject access requests
+- [ ] **Retention policies** — auto-archive `risk_assessments` > 90 days to S3
+- [ ] **PII detection in `/ask`** — scrub before sending to LLM (Microsoft Presidio)
+
+## Cost ballpark (production)
+
+| Component | Monthly |
+|---|---|
+| Vercel Pro | $20 |
+| Fly.io (2 × shared-cpu-2x) | ~$30 |
+| Neon Scale plan | ~$25 |
+| Anthropic Claude (estimate 10k requests / day, mostly Haiku + occasional Sonnet) | ~$50-150 |
+| **Total** | **~$125-225 / month** |
+
+Compared to building a TPRM tool in-house with a dedicated team: this is rounding noise. Compared to OneTrust / Archer license fees: same.
+
+## What we skipped for the hackathon
+
+Per the system prompt at the start: this is a **48-hour solo build**. We skipped:
+
+- Auth — every demo is "logged in as analyst"
+- Real CI/CD — Makefile + manual runs cover demo workflow
+- Real backups — `docker-compose down -v` will wipe the volume but that's fine
+- Real LLM cost controls — Ollama default is free; Claude usage is hand-bounded by demo length
+- Real secrets management — `.env` file is the source
+
+These are real production needs, listed above. The architecture supports adding them later without refactoring core code.

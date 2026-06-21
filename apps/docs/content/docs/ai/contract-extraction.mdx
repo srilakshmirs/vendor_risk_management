@@ -1,0 +1,121 @@
+---
+title: Contract Extraction
+description: Upload a vendor contract PDF, get structured risk metadata — data access, compliance, SLA, renewal date, termination clauses — via an LLM in ~10 s.
+---
+
+The `/contracts/extract` endpoint takes any vendor contract PDF and returns structured fields the scoring engine can act on.
+
+## What it extracts
+
+The LLM is constrained to a fixed JSON schema:
+
+```json
+{
+  "data_access_permissions": ["list of inferred or explicit data access rights"],
+  "compliance_obligations": ["SOC 2, ISO 27001, PCI-DSS, ..."],
+  "sla_uptime_percentage": "99.95 or null",
+  "renewal_date": "YYYY-MM-DD or null",
+  "termination_conditions": "brief summary of termination rights"
+}
+```
+
+The system prompt explicitly instructs the LLM: **"If a value is not found in the text, return null or an empty list rather than hallucinating."** Verified on the intentionally-vague `sample-msa-risky.pdf` — the LLM correctly returns nulls instead of inventing terms.
+
+## How it works
+
+```text
+PDF upload (multipart/form-data)
+   ↓
+pypdf.PdfReader → extract text from all pages
+   ↓
+Guard: if >30k chars, truncate + log a warning
+   ↓
+LLM.extract_json(SYSTEM_PROMPT, full_text, SCHEMA_HINT, prefer_smart=True)
+   ↓
+Optional: persist to Contract.extracted_terms (if vendor_id supplied)
+   ↓
+Response JSON
+```
+
+Files:
+
+- `apps/api/src/vrm_api/routers/contracts.py` — the endpoint
+- `data/contracts/sample-msa.pdf` — well-drafted demo PDF (6 KB)
+- `data/contracts/sample-msa-risky.pdf` — vague demo PDF (2.6 KB) for the "won't hallucinate" beat
+
+## Endpoint
+
+```http
+POST /contracts/extract
+Content-Type: multipart/form-data
+
+file: <PDF bytes>
+vendor_id: V0276          # optional — when provided, persists to Contract.extracted_terms
+```
+
+### With persistence (vendor_id supplied)
+
+```bash
+curl -X POST http://localhost:8000/contracts/extract \
+  -F "file=@data/contracts/sample-msa.pdf" \
+  -F "vendor_id=V0276"
+```
+
+```json
+{
+  "fields": {
+    "data_access_permissions": ["PII", "Financial transaction records", "Internal metadata"],
+    "compliance_obligations": ["SOC 2 Type II", "ISO/IEC 27001:2022", "PCI-DSS v4.0", "GDPR Art 28"],
+    "sla_uptime_percentage": 99.95,
+    "renewal_date": "2028-01-14",
+    "termination_conditions": "30-day cure for material breach; immediate termination on cert loss, security incident, or insolvency; 30-day data return/destruction."
+  },
+  "source_filename": "sample-msa.pdf",
+  "extracted_at": "2026-06-21T08:00:00Z",
+  "history": [],
+  "persisted": true
+}
+```
+
+### Without persistence (no vendor_id)
+
+```bash
+curl -X POST http://localhost:8000/contracts/extract \
+  -F "file=@my-contract.pdf"
+```
+
+Returns the same shape but `persisted: false` and the data isn't saved.
+
+## Error handling
+
+| Status | When |
+|---|---|
+| `400` | filename doesn't end in `.pdf`, or PDF is corrupt, or contains no extractable text |
+| `404` | `vendor_id` supplied but vendor doesn't exist (or has no Contract row to attach to) |
+| `502` | LLM call failed (network, rate limit, etc.) |
+| `500` | Generic — see server logs |
+
+Each error returns a JSON body with a user-friendly `detail`. No internal stack traces leaked.
+
+## Frontend integration
+
+The vendor detail page (`/vendors/[id]`) has a **Contract Intelligence** card with an "Upload PDF" button. Clicking it opens a file picker, the upload runs against `POST /contracts/extract?vendor_id=V0276` (auto-populated), and the extracted fields render on the page — survives a refresh because the data is persisted.
+
+## History tracking
+
+If a vendor already has an extraction on file, the previous one is moved to `extracted_terms.history[]` so re-uploads don't silently overwrite. Auditors get a timeline of what each version of the contract said.
+
+## Demo recipe
+
+1. Open `/vendors/V0276` (or any vendor)
+2. Scroll to **Contract Intelligence**
+3. Click **Upload PDF** → pick `data/contracts/sample-msa.pdf`
+4. ~10 seconds (Ollama) or ~3 seconds (Claude Haiku) later, the structured fields appear
+5. **For the "won't hallucinate" beat:** repeat with `sample-msa-risky.pdf` — most fields come back `null`
+
+## What's worth pointing out to judges
+
+- **Zero training** — the LLM works on contracts it has never seen because the schema constrains it
+- **Provider-agnostic** — same code path on Ollama or Claude; quality scales with model
+- **Persistence + history** — the system remembers what each contract said, when, and from which file
+- **Failure-mode honest** — the risky-contract demo proves the system says "I don't know" instead of inventing facts

@@ -1,0 +1,175 @@
+---
+title: Demo Flow
+description: 7 planted moments for a 3-minute walkthrough that lands. Memorize the order, hit each beat, end at the rubric panel.
+---
+
+The system ships with a **pre-baked demo dataset** so live walkthroughs work the same way every time. Run `make demo-reset` (one command, ~14 seconds with mock) → 400 vendors, 95 alerts, 2 CRITICAL stories planted, hero-vendor narratives pre-enhanced.
+
+## The 7 beats (target: 2:45)
+
+<Steps>
+<Step>
+### Portfolio overview (0:05 → 0:30)
+
+Open `/` — start at the home page.
+
+Point at the **KPI strip**: Total Vendors, Critical Risk, High Risk, Anomaly Accuracy. The accuracy number is live, not a screenshot — measured against ground truth.
+
+Point at the **rubric gates panel** (right side): all 5 gates green. Per-severity recall pills underneath.
+
+Point at the **severity donut**: the distribution at a glance.
+
+*"All 5 rubric metrics passing — measured, not estimated."*
+</Step>
+
+<Step>
+### Click "Poll breach feed" (0:30 → 1:00)
+
+Navigate to `/alerts`. Top right of the toolbar there's a **Poll breach feed** button.
+
+Click it.
+
+In ~5 seconds:
+
+- The topbar's red **CRITICAL** badge pulses
+- Two new CRITICAL alerts appear with motion stagger
+- Affected vendor scores auto-rescore
+
+*"Continuous monitoring. The system just ingested 6 breaches from HIBP / CISA-KEV style feeds, raised alerts, and re-scored 6 vendors. In real life this runs every 6 hours."*
+</Step>
+
+<Step>
+### Ask the analyst (1:00 → 1:40)
+
+Navigate to `/ask`.
+
+Type the example question: *"Which vendors have CRITICAL risk and handle PII?"*
+
+Press Enter.
+
+In ~1 second the **citations sidebar** populates on the right (the RAG retrieval).
+
+In ~3 seconds the LLM starts streaming. Vendor references render as clickable `[V0276]` pills.
+
+*"RAG over pgvector. Citations come back first so the user has something to look at while the LLM streams. Every vendor reference is a clickable link."*
+
+Hover over `[V0276]` so judges see the cursor change.
+</Step>
+
+<Step>
+### Drill into V0276 (1:40 → 2:15)
+
+Click `[V0276]` in the streamed answer.
+
+The vendor detail page loads. The risk gauge **sweeps** to 85, the AI narrative is already there (pre-enhanced during `make demo-reset`).
+
+Read the narrative aloud — it cites the breach date, GDPR Article 33, NIST SP 800-53 SA-9.
+
+Scroll to the **Supply Chain (SBOM)** card. Empty state.
+
+*"Now let's see what happens when we ingest a software bill of materials."*
+
+Click **Upload SBOM** → pick `data/sboms/sample-cyclonedx.json`.
+
+~1 second later: **CRITICAL: 1** with log4j-core flagged.
+
+*"The operational score just jumped 40 points. Click Recompute Risk to see the composite update."*
+</Step>
+
+<Step>
+### Upload a contract (2:15 → 2:45) — optional skip
+
+Scroll to **Contract Intelligence**. Click **Upload PDF** → pick `data/contracts/sample-msa.pdf`.
+
+In ~10 seconds (Ollama) or ~3 seconds (Claude), extracted fields render:
+- Data access: PII, Financial, Internal
+- SLA: 99.95%
+- Renewal: 2028-01-14
+- Termination clauses
+
+*"Zero training — the LLM works on contracts it has never seen because the schema constrains it."*
+
+(Skip this if running short.)
+</Step>
+
+<Step>
+### Export Audit Pack (2:45 → 3:00)
+
+Click the **Export Audit Pack** button (top right of vendor detail).
+
+A PDF downloads in &lt;300 ms.
+
+Open it. Page 1: executive summary + risk score + 5-component breakdown.
+
+Page 2: certifications, contract, breach history, open alerts, compliance framework footer (GDPR Art 28/33, NIST SP 800-53 SA-9, SOX 404).
+
+*"Every signal an auditor asks for. 250 milliseconds. Replaces hours of manual evidence collection."*
+</Step>
+
+<Step>
+### Close at the eval page (3:00 → 3:15)
+
+Navigate to `/eval`.
+
+Point at the rubric gates panel: all PASS.
+
+*"Reproducible — `make eval` runs the same harness from a clean clone. CI fails if any gate drops below threshold."*
+</Step>
+</Steps>
+
+## Hero vendors
+
+| ID | Name | Why it's planted |
+|---|---|---|
+| **V0276** | Wade-Barrett SAS | Ransomware breach (PHI + PII), pre-enhanced narrative |
+| **V0007** | Mayo-Bowman Ltd | Password dump (PII + Email + password hash), pre-enhanced narrative |
+
+These are the vendors you click in step 4. Their narratives are pre-enhanced so the first click in the demo already shows the LLM output with no waiting.
+
+To use different hero vendors:
+
+```bash
+make demo-reset HERO_VENDORS="V0042 V0145"
+```
+
+## Pre-flight checklist (5 minutes before demo)
+
+```bash
+# 1. Wipe + rebuild everything
+make demo-reset
+
+# 2. Start servers (two terminals)
+make api
+make web
+
+# 3. Open browser tabs (in order)
+open http://localhost:3000           # /
+open http://localhost:3000/alerts    # /alerts
+open http://localhost:3000/ask       # /ask
+open http://localhost:3000/eval      # /eval
+
+# 4. Verify the eval gates panel is all-green
+open http://localhost:8000/risk/eval | jq .rubric_pass
+# {
+#   "anomaly_accuracy_>=_0.80": true,
+#   "critical_recall_>=_0.95": true,
+#   "high_recall_>=_0.80": true,
+#   "binary_f1_>=_0.85": true
+# }
+```
+
+## If something goes wrong mid-demo
+
+```bash
+# Reset to known-good state in 14 seconds
+make demo-reset
+```
+
+This wipes + rebuilds the entire demo dataset including hero-vendor narratives. Safe to run repeatedly.
+
+## What NOT to do
+
+- Don't click "Recompute risk" on a non-hero vendor — the deterministic narrative is fine but won't have the AI gradient pill. Stick to V0276 and V0007.
+- Don't try to demo on Ollama if you have Claude credentials available. Ollama's 30-second narrative generation kills the pacing.
+- Don't dwell on slide 1 of the pitch deck — open straight to the dashboard.
+- Don't apologize for anything you didn't build. The 5/5 rubric is the headline.

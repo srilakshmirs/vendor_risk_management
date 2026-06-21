@@ -1,0 +1,122 @@
+---
+title: Integrations
+description: How VRM Intelligence slots into ITSM, procurement, SIEM, identity, GRC, and CMDB systems. Concrete patterns with field mappings.
+---
+
+VRM Intelligence is **the source of truth for vendor risk** — not a silo. This page describes the integration patterns into the rest of a TPRM operating model.
+
+The system already writes every mutation to `audit_logs` (a SOX 404 evidence trail) and emits structured JSON logs. The integration work is mostly outbound webhooks + nightly exports.
+
+## ITSM — ServiceNow / Jira Service Management
+
+When a CRITICAL or HIGH alert is created, automatically open a remediation ticket on the right queue with a deep link back to the vendor detail page.
+
+**Pattern:** outbound webhook on `Alert` insert with severity ≥ HIGH.
+
+Add a `POST_TO_ITSM=true` env var. Implement `services/itsm_dispatcher.py` that templates an incident payload and POSTs to the ITSM API.
+
+**Field mapping:**
+
+| VRM | ITSM (ServiceNow `incident`) |
+|---|---|
+| `Vendor.name` | `caller_id` or "Affected vendor" custom field |
+| `Alert.severity` | `priority` — CRITICAL=1, HIGH=2, MEDIUM=3, LOW=4 |
+| `Alert.message` | `short_description` + `description` |
+| `Alert.due_date` | `due_date` |
+| VRM dashboard URL | `u_external_url` (or comment) |
+
+**ServiceNow REST:**
+```
+POST /api/now/table/incident
+Authorization: Bearer <token>
+```
+
+**Jira:**
+```
+POST /rest/api/3/issue
+{"fields": {"project": {"key": "VRM"}, "issuetype": {"name": "Incident"}, ...}}
+```
+
+**Round-trip:** subscribe to ITSM webhook → `PATCH /alerts/{id}` to mark `status=resolved` when the ticket closes.
+
+## Procurement — SAP Ariba / Coupa / Oracle Procurement
+
+Block new POs and require explicit override when a vendor's risk score crosses into CRITICAL.
+
+**Pattern:** outbound webhook on `RiskAssessment` insert with severity=CRITICAL; reverse direction polls Ariba/Coupa nightly for new vendors and seeds `Vendor` rows.
+
+**Ariba:**
+```
+PUT /api/v2/suppliers/{id}
+{ "extras": { "vrmRiskScore": 85, "vrmSeverity": "CRITICAL" } }
+```
+
+**Coupa:**
+```
+PUT /api/suppliers/{id}/extras
+```
+
+**Approval gates:** require explicit buyer attestation in the dashboard before any PO on a CRITICAL vendor. Use a 2-person rule with an `audit_logs` row per approval.
+
+## SIEM — Splunk / Microsoft Sentinel / Elastic
+
+Ship every `audit_logs` row + every alert state transition as a structured event for centralised security ops.
+
+**Pattern:** `structlog.processors.JSONRenderer()` (already in `logging_config.py`) → log shipper at stdout → ingest at the SIEM.
+
+**Splunk HEC:**
+```
+POST https://splunk.internal:8088/services/collector/event
+{ "sourcetype": "tprm:audit", "event": { ... } }
+```
+
+**Sentinel:** Azure Monitor Data Collection Endpoint with `vrm-audit` custom log.
+
+**Use case:** correlate vendor breach alerts with internal SIEM signals. *"We got a CRITICAL on V0276 — search VPC flow logs for outbound traffic to that vendor's IP ranges in the last 24h."*
+
+## Identity Provider — Okta / Azure AD
+
+Auto-disable vendor SSO when a CRITICAL alert fires.
+
+**Pattern:** alert webhook → `POST /scim/v2/Users/{vendor_user_id}` with `active: false`.
+
+**Use case:** covers the brief's *"Contractor access never revoked post-project; data sold to competitor"* scenario without human action.
+
+## GRC — Archer / OneTrust / LogicGate
+
+Push the full audit pack PDF + structured risk assessment as evidence for compliance attestations.
+
+**Pattern:** nightly export of `RiskAssessment` table → CSV → SFTP drop. Or direct GRC API integration.
+
+**Use case:** replaces the spreadsheet-driven SOC 2 / SOX 404 evidence collection that's currently manual.
+
+## CMDB — ServiceNow CMDB / Device42
+
+Bi-directional sync of `Vendor.systems_accessed` with the CMDB so *"which systems would AcmeCloud's breach affect?"* returns a precise list.
+
+**Pattern:**
+
+- Nightly CMDB pull → upsert into `DataAccess.systems_accessed`
+- Reverse: when a vendor's risk goes CRITICAL, tag every CMDB-linked CI with `tprm_risk=critical`
+
+## Data ingestion mock-to-prod swap table
+
+The system ships with mock JSON feeds for every external signal. Swapping for real APIs is a one-function change because the schema is intentionally identical.
+
+| Signal | Mock feed | Poller | Cron | Production swap |
+|---|---|---|---|---|
+| Vendor breach disclosures | `data/breach_feed.json` | `services/breach_feed.py` | every 6h | HIBP API, CISA-KEV RSS, vendor disclosure mailing lists |
+| Financial health / credit | `data/financial_signals.json` | `services/financial_scraper.py` | daily 04:00 UTC | Bloomberg API, Moody's, DnB, S&P, national credit bureaus |
+| SOC 2 / ISO / PCI verification | `data/cert_verifications.json` | `services/cert_verifier.py` | weekly Mon 02:00 UTC | AICPA SOC registry, BSI, Schellman, Coalfire QSA APIs |
+
+Each poller is idempotent + dedupe-aware (skips alerts already raised within a 7- or 24-hour window) and writes to `audit_logs` so every external state change is traceable.
+
+## Demo flow for integrations
+
+For a deeper demo, plant a fake outbound webhook in the codebase that POSTs to https://webhook.site/. When you click "Poll breach feed" you can show:
+
+1. CRITICAL alerts appear in the dashboard
+2. The webhook.site inbox shows the outbound POST payloads
+3. (If wired) the ServiceNow inbox shows the incidents
+
+This is overkill for a 3-min pitch but useful if a judge asks "but how does this fit into our existing tools?"

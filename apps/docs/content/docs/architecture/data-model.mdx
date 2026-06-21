@@ -1,0 +1,198 @@
+---
+title: Data Model
+description: Nine ORM tables. Their fields, relationships, and the role each plays in scoring + UI.
+---
+
+All models live in `apps/api/src/vrm_api/models/` as SQLAlchemy 2.0 typed declarations. Every mutation writes a row to `audit_logs` (SOX 404 hygiene).
+
+## Tables at a glance
+
+| Table | Rows after `make demo-reset` | Purpose |
+|---|---|---|
+| `vendors` | 400 | The portfolio. One row per vendor. |
+| `contracts` | 400 | One per vendor. Stores extracted contract terms. |
+| `certifications` | 1,200 | 3 per vendor (SOC2, ISO27001, PCI-DSS). |
+| `data_access` | 400 | What systems + data classes each vendor touches. |
+| `breach_events` | 72 + 6 | Historical + new (post-feed-poll). |
+| `risk_assessments` | 400+ | One per scoring run. Append-only timeline. |
+| `alerts` | ~95 | Open + acked + resolved. |
+| `audit_logs` | grows | Append-only SOX 404 audit trail. |
+| `embeddings` | 400 | One pgvector row per vendor for RAG. |
+| `sboms` + `sbom_components` | n+m | Optional per vendor — uploaded via `/sbom/{vid}/upload`. |
+
+## `Vendor` (core entity)
+
+```python
+class Vendor(Base, TimestampMixin):
+    id: int                          # PK
+    vendor_id: str                   # human-readable code, e.g. "V0276"
+    name: str
+    vendor_type: str                 # CloudProvider | SaaS | Contractor | ...
+    country: str
+    criticality: str                 # Tier1 | Tier2 | Tier3 | Tier4
+    annual_spend_usd: int
+    primary_contact_email: str | None
+    last_assessment_date: date | None
+    under_investigation: bool
+    financial_health_score: int      # 0–100, higher = healthier
+    preliminary_risk_score: int      # 0–100, higher = riskier (analyst input)
+    status: str                      # active | offboarding | terminated
+```
+
+Relationships:
+
+- `contracts`, `certifications`, `data_access` (1:N)
+- `risk_assessments` (1:N, append-only — newest is "current")
+- `breaches`, `alerts` (1:N)
+- `sboms` (1:N)
+
+## `Contract`
+
+One per vendor in the seed data. The `extracted_terms` JSONB column is populated by `POST /contracts/extract` and carries history across re-uploads.
+
+```python
+class Contract:
+    vendor_id: int                   # FK
+    start_date: date
+    end_date: date
+    value_usd: int
+    pdf_path: str | None
+    extracted_terms: dict | None     # JSON: { fields, source_filename, extracted_at, history[] }
+    auto_renew: bool
+```
+
+## `Certification`
+
+```python
+class Certification:
+    vendor_id: int                   # FK
+    cert_type: str                   # SOC2 | ISO27001 | PCI-DSS | HIPAA
+    status: str                      # Certified | Expired | NotCertified | Pending
+    issued_date: date | None
+    expiry_date: date | None
+    document_path: str | None
+```
+
+The **cert verification poller** (`services/cert_verifier.py`) mutates `status` + `expiry_date` from the mock AICPA / BSI feed.
+
+## `DataAccess`
+
+```python
+class DataAccess:
+    vendor_id: int                   # FK
+    access_level: str                # None | Read | ReadWrite | FullAdmin
+    data_classes: str                # ;-separated: PII;PCI;PHI;Financial;Internal;Public
+    systems_accessed: str            # ;-separated: CoreBanking;CRM;DataWarehouse;...
+    gdpr_compliant: bool
+```
+
+Drives the **data_access** score component and the rule that fires `BREACHED_VENDOR_HIGH_ACCESS`.
+
+## `RiskAssessment` (append-only timeline)
+
+```python
+class RiskAssessment:
+    vendor_id: int                   # FK
+    score: int                       # 0–100, higher = riskier
+    traffic_light: str               # Red | Yellow | Green
+    severity: str                    # CRITICAL | HIGH | MEDIUM | LOW | NONE
+    anomaly_type: str | None         # which of the 7 rule labels matched
+    components: dict                 # {raw: {...}, weighted: {...}, reasons: {...}, meta: {...}}
+    narrative: str | None            # deterministic; LLM-enhanced overrides via /enhance
+    triggered_rules: list[str]       # rule IDs that fired
+    model_version: str               # "rules-v1.1"
+```
+
+Never updated, always inserted — a tamper-evident timeline. The "current" score is `max(risk_assessments, key=created_at)`.
+
+`components.meta` carries LLM enhancement provenance (`narrative_source`, `narrative_provider`, `narrative_model`) after `/risk/score/{id}/enhance`.
+
+## `BreachEvent`
+
+```python
+class BreachEvent:
+    vendor_id: int                   # FK
+    source: str                      # HIBP | CISA-KEV | news | self-disclosed | seed
+    severity: str                    # Low | Medium | High | Critical
+    detected_at: date
+    data_exposed: str                # ;-separated data classes
+    summary: str | None
+    resolved: bool
+```
+
+Idempotency key: `(source, vendor_id, detected_at)`. Poller skips re-inserts.
+
+## `Alert`
+
+```python
+class Alert:
+    vendor_id: int                   # FK
+    alert_type: str                  # NEW_BREACH_DETECTED, CERT_EXPIRY_SOC2_30D, ...
+    severity: str                    # CRITICAL | HIGH | MEDIUM | LOW
+    message: str
+    status: str                      # open | ack | resolved
+    due_date: date | None
+```
+
+Severity ladder per source:
+- **Cert/contract expiry**: 60d → LOW, 30d → MEDIUM, 7d → HIGH
+- **Breach feed**: maps from source severity (Critical → CRITICAL)
+- **Financial scrape**: tiered by new score (≤35 CRITICAL, ≤50 HIGH, ≤70 MEDIUM, else LOW)
+- **Cert status change**: HIGH if Certified→Expired/Revoked, MEDIUM if Pending, LOW if upgrade
+
+## `AuditLog` (append-only)
+
+```python
+class AuditLog:
+    actor: str                       # api | cli | scheduler | seed
+    action: str                      # score_vendor | breach_poll | contract_extract | ...
+    entity_type: str                 # vendor | alert | risk_assessment | breach_event
+    entity_id: str | None
+    payload: dict | None
+```
+
+Every mutation writes here. Satisfies the SOX 404 evidence requirement called out in the brief.
+
+## `Embedding` (pgvector)
+
+```python
+class Embedding:
+    entity_type: str                 # "vendor" (room for "contract" later)
+    entity_id: str                   # vendor_id, e.g. "V0276"
+    chunk: str                       # the indexed text
+    vector: list[float]              # Vector(384)
+    source: str                      # "indexer"
+```
+
+Indexed with HNSW on `vector_cosine_ops`. Powers `/ask` retrieval.
+
+## `Sbom` + `SbomComponent`
+
+```python
+class Sbom:
+    vendor_id: int
+    format: str                      # CycloneDX | SPDX | Custom
+    version: str | None
+    raw_data: str                    # original JSON
+    components: list[SbomComponent]
+
+class SbomComponent:
+    sbom_id: int
+    name: str
+    version: str
+    type: str | None
+    highest_severity: str | None     # CRITICAL | HIGH | MEDIUM | LOW | NONE
+    vulnerabilities: str             # JSON: [{cve_id, severity, description}, ...]
+```
+
+Uploading via `POST /sbom/{vid}/upload` parses the file, scans CVE registry, and triggers a vendor re-score (`operational_score` rule).
+
+## Why "append-only" matters
+
+Both `RiskAssessment` and `AuditLog` are insert-only. This means:
+
+- **Tamper-evident** — you can prove what the system thought at any historical moment
+- **Backward-compatible eval** — re-running scoring against old vendor state doesn't destroy the old assessment
+- **Required for SOX 404** — auditors need to trace "what alert fired when, and who acked it"
+
+The trade-off: a long-running portfolio accumulates rows. In production you'd archive `risk_assessments` older than 90 days to cold storage.

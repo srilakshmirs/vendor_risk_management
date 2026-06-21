@@ -1,0 +1,79 @@
+---
+title: Overview
+description: How to use the API — base URL, content types, error handling, request IDs, auth (none, for now), and where to find the live OpenAPI schema.
+---
+
+The FastAPI app auto-generates OpenAPI 3.1 docs. **The fastest way to explore the API is the interactive Swagger UI at http://localhost:8000/docs.**
+
+This page covers the conventions you'll see across every endpoint.
+
+## Base URL
+
+| Environment | URL |
+|---|---|
+| Local dev | `http://localhost:8000` |
+| Inside Docker compose | `http://api:8000` (between containers) |
+
+The web app reads `NEXT_PUBLIC_API_URL` to know where to send requests.
+
+## Content types
+
+| Direction | Type |
+|---|---|
+| Request body (most endpoints) | `application/json` |
+| Request body (file uploads) | `multipart/form-data` (used by `/contracts/extract`, `/sbom/{vid}/upload`) |
+| Response body (most endpoints) | `application/json` |
+| Response body (audit pack) | `application/pdf` |
+| Response body (`/ask/stream`) | `text/event-stream` (Server-Sent Events) |
+
+## Authentication
+
+**None today.** This is a hackathon submission, not a production deploy.
+
+Wiring `Authorization: Bearer <token>` middleware is one route file change — the rest of the system is unaffected. See the Operations → Integrations page for the production auth pattern (Okta/Azure AD SSO + per-route scope checks).
+
+## Request IDs
+
+Every response carries an `X-Request-ID` header. If you send one on the request, it'll be preserved; otherwise a random 12-char hex ID is generated and logged. Useful for correlating client → server → log search.
+
+```
+X-Request-ID: a4b8c2d1e9f0
+X-Duration-Ms: 247.83
+```
+
+## Error envelope
+
+```json
+{
+  "detail": "Vendor V9999 not found",
+  "rid": "a4b8c2d1e9f0"
+}
+```
+
+- `4xx` errors carry a user-facing `detail` string
+- `5xx` errors return a generic `"Internal Server Error"` message + the request ID for log lookup — never internal stack traces
+
+## CORS
+
+Configured at startup from the `CORS_ORIGINS` setting. Default allows:
+
+- `http://localhost:3000` (Next.js dashboard)
+- `http://localhost:3001` (this Fumadocs site, when run locally)
+
+Set `CORS_ORIGINS` in `.env` for production hosts.
+
+## Live OpenAPI
+
+| URL | Purpose |
+|---|---|
+| http://localhost:8000/openapi.json | Raw OpenAPI 3.1 schema (machine-readable) |
+| http://localhost:8000/docs | Interactive Swagger UI — try every endpoint |
+| http://localhost:8000/redoc | Alternative ReDoc UI |
+
+## Endpoint reference
+
+<Cards>
+  <Card title="All endpoints" href="/docs/api/endpoints">
+    Complete table mapping every route — vendors, risk, alerts, contracts, ask, audit, sbom, health.
+  </Card>
+</Cards>

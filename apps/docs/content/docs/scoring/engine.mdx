@@ -1,0 +1,128 @@
+---
+title: Engine
+description: The 5-component composite + 7-rule pipeline that drives every risk score in the system. Pure Python, deterministic, sub-millisecond per vendor.
+---
+
+The scoring engine is a **pure function** over a `VendorContext` dataclass — no DB access, no LLM calls, no network. This makes it trivially testable and fast enough to score 400 vendors in ~10 ms.
+
+```text
+score_vendor(VendorContext) → ScoredVendor
+  ├── 5 weighted components (each 0–100)
+  ├── 7-rule priority pipeline (first match wins)
+  ├── Composite score (sum of weighted components, 0–100)
+  ├── Severity (from rule match; falls back to NONE)
+  ├── Traffic light (Red / Yellow / Green)
+  ├── Triggered rule IDs
+  └── Deterministic narrative
+```
+
+Files:
+
+- `apps/api/src/vrm_api/scoring/context.py` — `VendorContext` dataclass + ORM / CSV adapters
+- `apps/api/src/vrm_api/scoring/components.py` — the 5 scoring functions
+- `apps/api/src/vrm_api/scoring/rules.py` — the 7-rule classifier
+- `apps/api/src/vrm_api/scoring/engine.py` — orchestrator
+- `apps/api/src/vrm_api/scoring/evaluator.py` — measures against `vendor_labels.csv`
+
+## The 5 components
+
+Each function takes `(VendorContext, today)` and returns `(score: int 0–100, reasons: list[str])`. The composite is a weighted sum.
+
+| Component | Weight | What it measures |
+|---|---|---|
+| **breach** | 30% | Recent breach history. Severity-weighted, count-penalised, recency-boosted. |
+| **data_access** | 25% | Blast radius — access level × sensitive data classes held. |
+| **compliance** | 20% | Certification gaps, GDPR posture, near-expiry warnings. |
+| **financial** | 15% | Vendor failure risk → service continuity risk. |
+| **operational** | 10% | Contract/assessment hygiene + SBOM CVE counts. |
+
+> Weights are tunable via `.env` (`WEIGHT_BREACH`, `WEIGHT_DATA_ACCESS`, etc.). Must sum to 1.0.
+
+### breach_score
+
+```python
+def breach_score(ctx, today):
+    if ctx.breach_count_12mo == 0:
+        return 0, []
+    base = BREACH_SEV_WEIGHT[ctx.last_breach_severity]   # Critical=100, High=80, ...
+    count_penalty = min(40, (ctx.breach_count_12mo - 1) * 20)
+    recency_penalty = 20 if (today - ctx.last_breach_date).days <= 30 else 0
+    return clip(base + count_penalty + recency_penalty), [...]
+```
+
+A vendor with a single Critical breach in the last 30 days scores **100/100** on this component.
+
+### data_access_score
+
+```python
+base = ACCESS_LEVEL_WEIGHT[ctx.access_level]            # None=0, Read=20, ReadWrite=50, FullAdmin=80
+sensitive_bonus = 18 * len(ctx.data_classes & {"PII","PCI","PHI","Financial"})
+if not ctx.gdpr_compliant and "PII" in ctx.data_classes:
+    return clip(base + sensitive_bonus + 20), [...]
+return clip(base + sensitive_bonus), [...]
+```
+
+A FullAdmin vendor handling PII + Financial scores **80 + 18 + 18 = 100/100**.
+
+### compliance_score
+
+Stacks penalties:
+
+- Each **expired** cert: +30 (with sensitive data) or +18 (without)
+- Each cert **expiring within 30 days**: +8
+- **No SOC 2** attestation on a sensitive-data vendor: +12
+- **No PCI-DSS** on a vendor processing PCI: +15
+- **Not GDPR compliant**: +20
+
+### financial_score
+
+```python
+base = 100 - ctx.financial_health_score      # invert: healthy → low risk
+if ctx.under_investigation:
+    base += 25
+return min(100, base), [...]
+```
+
+### operational_score
+
+Stacks:
+
+- **Contract expired but access still provisioned**: +45
+- **Last assessed > 365 days ago**: +20 (or +10 if never assessed)
+- **Tier1 criticality**: +5
+- **SBOM CRITICAL CVEs > 0**: +40
+- **SBOM HIGH CVEs > 0** (and no CRITICAL): +25
+
+## Composite + severity floors
+
+```python
+composite = sum(score * weight for score, weight in components)
+score = int(round(composite))
+
+if severity == "CRITICAL":
+    score = max(score, 85)       # CRITICAL floor
+elif severity == "HIGH":
+    score = max(score, 70)       # HIGH floor
+```
+
+The floors ensure the **numeric score never undersells the categorical classification**. A vendor classified CRITICAL by a rule will always show ≥ 85, even if the weighted sum came out lower.
+
+## Why deterministic?
+
+The rubric requires **reproducibility**. Every call to `score_vendor(ctx)` with the same input returns byte-identical output. This means:
+
+- **Regression-gated CI** — `pytest -k rubric` is a hard contract
+- **No flaky tests** — no LLM randomness in the score path
+- **Auditor friendly** — given a vendor's state at time T, the score is reproducible at any later time
+- **Fast** — ~25 µs per vendor, 10 ms for all 400 → `make eval` runs the full harness in ~250 ms
+
+## Next
+
+<Cards>
+  <Card title="Rules" href="/docs/scoring/rules">
+    The 7-rule priority pipeline that produces anomaly classifications.
+  </Card>
+  <Card title="Evaluation" href="/docs/scoring/evaluation">
+    How the eval harness measures the engine against `vendor_labels.csv`.
+  </Card>
+</Cards>

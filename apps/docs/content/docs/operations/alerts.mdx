@@ -1,0 +1,108 @@
+---
+title: Alerts
+description: Severity ladder, alert types, lifecycle (open → ack → resolved), and how the dashboard surfaces them.
+---
+
+The `alerts` table is the system's continuous-monitoring output. Every signal that requires human attention writes a row here.
+
+## Alert types
+
+| Type | Source | Severity logic |
+|---|---|---|
+| `CERT_EXPIRY_SOC2_60D` (and `_30D`, `_7D`) | expiry_sweep | LOW / MEDIUM / HIGH by threshold |
+| `CERT_EXPIRY_ISO27001_60D` (and `_30D`, `_7D`) | expiry_sweep | LOW / MEDIUM / HIGH |
+| `CERT_EXPIRY_PCI-DSS_60D` (and `_30D`, `_7D`) | expiry_sweep | LOW / MEDIUM / HIGH |
+| `CONTRACT_EXPIRY_60D` (and `_30D`, `_7D`) | expiry_sweep | LOW / MEDIUM / HIGH |
+| `NEW_BREACH_DETECTED` | breach_feed | maps from breach severity (Critical → CRITICAL) |
+| `FINANCIAL_HEALTH_DROP` | financial_scraper | ≤35 CRITICAL, ≤50 HIGH, ≤70 MEDIUM, else LOW |
+| `FINANCIAL_HEALTH_IMPROVED` | financial_scraper | always LOW |
+| `CERT_STATUS_CHANGED_SOC2` (and `_ISO27001`, `_PCI-DSS`) | cert_verifier | HIGH on Certified→Expired/Revoked, MEDIUM on Pending, LOW on upgrade |
+
+## Severity ladder
+
+| Severity | UI | Meaning | Typical response window |
+|---|---|---|---|
+| **CRITICAL** | 🔴 red, pulsing | Immediate action required — breach + sensitive access, or active investigation | within 24h |
+| **HIGH** | 🟠 orange | Remediate within 7 days — expired cert on sensitive data, high risk score | within 7d |
+| **MEDIUM** | 🟡 amber | Track + plan — cert expiring in 30 days, contract ending, recent breach | within 30d |
+| **LOW** | 🔵 sky | Awareness — cert expiring in 60 days, score in elevated band | next review cycle |
+
+## Lifecycle
+
+```text
+created (open)
+    │
+    ├──► ack       (analyst acknowledged; triaged; tracking)
+    │
+    └──► resolved  (issue addressed; alert closed)
+```
+
+```http
+PATCH /alerts/{id}
+{ "status": "ack" }     # or "resolved"
+```
+
+The frontend's `/alerts` page exposes Ack / Resolve buttons inline.
+
+## Idempotency
+
+Every alert generator dedupes within a window:
+
+- **Expiry sweep** — skips if an open alert exists with same `(vendor_id, alert_type, due_date)` or any matching alert was created in the last 24h
+- **Breach poll** — skips if a `BreachEvent` exists with same `(source, vendor_id, detected_at)`
+- **Financial scraper** — skips if a `FINANCIAL_HEALTH_DROP` for this vendor was raised in the last 7 days
+- **Cert verifier** — skips if no status or expiry change since last check
+
+Re-running back-to-back is safe.
+
+## Frontend surfacing
+
+### Topbar badge
+
+The topbar shows `{N} crit · {N} high` at all times. The badge **pulses red** with a framer-motion scale animation whenever `open_critical > 0`. Clicking goes to `/alerts`.
+
+### Alerts page (`/alerts`)
+
+- **KPI strip** — Open Critical / Open High / All Open / Resolved (clickable filter shortcuts)
+- **Severity + status pill toolbar** — ALL / CRITICAL / HIGH / MEDIUM / LOW × open / ack / resolved / all
+- **Motion-staggered table** — every row fades in with `AnimatePresence`
+- **Per-row actions** — Ack and Resolve buttons
+- **Manual triggers** — "Run expiry sweep" + "Poll breach feed" buttons for live demo
+
+### Vendor detail page
+
+Open alerts for the specific vendor are rendered in the audit pack PDF and surfaced inline on the detail page through the broader risk narrative.
+
+## API surface
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/alerts` | List with filters (severity, status, vendor_code, alert_type) + sort + pagination |
+| `GET` | `/alerts/count` | Aggregate counts: total / open / ack / resolved / by_severity / by_type / open_critical / open_high |
+| `PATCH` | `/alerts/{id}` | Update status |
+| `POST` | `/alerts/sweep` | Manual expiry sweep trigger |
+| `POST` | `/alerts/breach-poll` | Manual breach feed trigger |
+| `POST` | `/alerts/scrape-financial` | Manual financial scraper trigger |
+| `POST` | `/alerts/verify-certs` | Manual cert verifier trigger |
+| `GET` | `/alerts/scheduler/status` | List active scheduled jobs + next-run times |
+
+## Optional: email notifications
+
+The `services/email_service.py` module ships HTML-templated emails on HIGH/CRITICAL events. Wired into:
+
+- `score_all.py::run()` — sends on new CRITICAL/HIGH and on resolution
+- `expiry_sweep.py` — sends on HIGH/CRITICAL expiry alerts
+- `breach_feed.py` — sends on HIGH/CRITICAL breach alerts
+
+Toggle via env:
+
+```bash
+EMAIL_ENABLED=true
+EMAIL_ADMIN_RECIPIENTS=["analyst@socgen.com", "ops@socgen.com"]
+SMTP_HOST=smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+```
+
+When `EMAIL_ENABLED=false` (default), every send becomes a no-op — no crashes, no logs, just silence. This means the alert pipeline always works in demos.

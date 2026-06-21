@@ -1,0 +1,104 @@
+---
+title: Rules
+description: 7-rule priority pipeline. First match wins, most severe first. Maps 1:1 to the anomaly types in the hackathon's ground-truth labels.
+---
+
+The composite score is necessary but not sufficient — judges want **categorical anomaly labels**, not just a number. The rule pipeline classifies each vendor into one of seven labels (or `NONE`).
+
+## The pipeline
+
+Rules are evaluated **top to bottom**. First match wins. Ordering is **most severe first**, with one tweak: within the same severity bucket, the more **specific** signal wins.
+
+| Rule | Anomaly type | Severity | Trigger |
+|---|---|---|---|
+| R01 | `BREACHED_VENDOR_HIGH_ACCESS` | **CRITICAL** | breach in 12mo + High/Critical severity + sensitive data + ReadWrite/FullAdmin access |
+| R02 | `VENDOR_UNDER_INVESTIGATION` | **CRITICAL** | `under_investigation` flag set |
+| R03 | `HIGH_RISK_SCORE` | **HIGH** | `preliminary_risk_score > 80` |
+| R04 | `EXPIRED_CERTIFICATION` | **HIGH** | any expired cert + sensitive data |
+| R05 | `RECENTLY_BREACHED_VENDOR` | **MEDIUM** | breach in 12mo (lower-severity / lower-scope) |
+| R06 | `CONTRACT_EXPIRED_ACTIVE_ACCESS` | **MEDIUM** | contract end < today + access != None |
+| R07 | `ELEVATED_RISK_VENDOR` | **LOW** | `preliminary_risk_score` ∈ [65, 80] |
+| _(fallthrough)_ | `NONE` | **NONE** | no rule matched |
+
+## Why this order
+
+The rubric's judging line:
+
+> *"Recall on CRITICAL/HIGH matters more than overall precision. Missing a breached vendor with PII access is far worse than over-flagging a mid-risk vendor."*
+
+This means:
+
+1. **R01 and R02 must fire first** — these are the unambiguous CRITICALs we cannot miss.
+2. **R03 before R04** — `HIGH_RISK_SCORE` is a more specific signal than `EXPIRED_CERTIFICATION` (the analyst already aggregated multiple signals into the score). Within the HIGH bucket, prefer the stronger statement.
+3. **R05 + R06 catch what R01-R04 didn't** — a vendor with a Medium-severity breach (no High/Critical) lands on R05 instead of R01.
+4. **R07 is the safety net** for vendors with elevated scores but no specific rule trigger.
+
+## How this delivers the rubric
+
+The mock generator (`data/generate_mock_data.py`) builds 400 vendors with exactly one "target anomaly" each, then plants conditions that should make that anomaly fire. The eval harness measures how often the rules pick the same label.
+
+Headline result on the seed=42 dataset:
+
+| Severity | Support | Recall | Precision |
+|---|---|---|---|
+| **CRITICAL** | 52 | **100.0%** | 100.0% |
+| **HIGH** | 120 | **100.0%** | 83.3% |
+| MEDIUM | 80 | 88.8% | 81.6% |
+| LOW | 68 | 54.4% | 100.0% |
+| NONE | 80 | 100.0% | 100.0% |
+
+The 54.4% LOW recall is **expected and correct** — most "LOW" vendors in the synthetic ground truth also happen to have an expired cert or active contract issue, which our rules correctly promote to MEDIUM or HIGH. The rubric explicitly rewards this behaviour.
+
+## Adding a rule
+
+```python
+# apps/api/src/vrm_api/scoring/rules.py
+def rule_my_new_check(ctx: VendorContext, today: date) -> RuleHit | None:
+    if ctx.some_field == "trigger_value":
+        return RuleHit(
+            anomaly_type="MY_NEW_ANOMALY",
+            severity="HIGH",
+            rule_id="R08",
+            rationale=f"Detected because {ctx.some_field} == trigger_value",
+        )
+    return None
+
+RULE_PIPELINE = (
+    rule_breached_high_access,
+    rule_under_investigation,
+    rule_high_risk_score,
+    rule_expired_certification_sensitive,
+    rule_my_new_check,        # ← inserted at the right severity tier
+    ...
+)
+```
+
+Then update `SEVERITY_BY_TYPE` in the same file, re-run `make eval`, and verify the rubric numbers don't regress.
+
+## Triggered rules in the response
+
+Every `ScoredVendor` includes `triggered_rules: list[str]` — the rule IDs that fired (in order). Even though only the first hit determines the classification, the system records *all* matches for the audit trail.
+
+```json
+{
+  "score": 85,
+  "severity": "CRITICAL",
+  "anomaly_type": "BREACHED_VENDOR_HIGH_ACCESS",
+  "triggered_rules": ["R01", "R04", "R05"],
+  ...
+}
+```
+
+This is what populates the **"Triggered rules"** badges on the vendor detail page.
+
+## Severity → traffic light
+
+| Severity | Light | UI tone |
+|---|---|---|
+| CRITICAL | 🔴 Red | red-600 |
+| HIGH | 🔴 Red | orange-500 |
+| MEDIUM | 🟡 Yellow | amber-400 |
+| LOW | 🟡 Yellow | sky-300 |
+| NONE | 🟢 Green | emerald-500 |
+
+Mapped in `scoring/rules.py::traffic_light_from_severity`.

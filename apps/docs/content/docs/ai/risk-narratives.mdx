@@ -1,0 +1,143 @@
+---
+title: Risk Narratives
+description: Every risk assessment ships with a narrative. Deterministic by default, LLM-enhanced on demand. Cites GDPR Article 28/33, NIST SP 800-53 SA-9, SOX 404.
+---
+
+A risk score is a number. A risk **narrative** is what an analyst can hand to a procurement team, an auditor, or a board member.
+
+The scoring engine produces a **deterministic** narrative (always available, instant, &lt;1 ms). The optional `POST /risk/score/{id}/enhance` endpoint replaces it with an **LLM-generated** narrative that's richer, more specific, and uses precise compliance vocabulary.
+
+## Deterministic narrative
+
+Generated inside `scoring/engine.py::_build_narrative`. It's always populated when `score_vendor()` runs:
+
+```text
+Wade-Barrett SAS — CRITICAL: Recent Critical breach + FullAdmin access
+to Financial, Internal, PCI. Other drivers: Breach detected within last
+30 days (2026-06-08); Last breach severity: Critical; FullAdmin access
+to 4 system(s). Immediate action required — revoke active credentials,
+trigger breach-response playbook, and notify Procurement and Compliance
+within 24 hours.
+```
+
+Two-three sentences. Template-driven. Reliable. Free.
+
+## LLM-enhanced narrative
+
+Generated on demand by `POST /risk/score/{vendor_id}/enhance`. Persists the LLM output to `RiskAssessment.narrative` and records provenance metadata.
+
+Same vendor, enhanced:
+
+```text
+The CRITICAL risk associated with Wade-Barrett SAS is due to a recent
+breach event on June 8, 2026, where critical financial data was
+compromised, resulting in a severity score of 85/100. This breach,
+combined with the vendor's lack of PCI-DSS certification and expired
+SOC2 certification set to expire in February 2026, poses significant
+compliance risks under GDPR Article 28/33 and NIST SP 800-53 SA-9
+guidelines.
+
+Recommended action: Conduct a thorough investigation into the breach,
+obtain an updated PCI-DSS certification, and schedule a SOC2
+re-certification by June 2026. Additionally, review Wade-Barrett SAS's
+data access controls to ensure alignment with industry standards.
+```
+
+Notice the differences:
+
+- **Specific dates** ("June 8, 2026", "February 2026")
+- **Specific scores** ("severity score of 85/100")
+- **Compliance citations** (GDPR Art 28/33, NIST SP 800-53 SA-9)
+- **Sequenced remediation** ("First… additionally… finally…")
+
+## System prompt
+
+```
+You are the Société Générale Third-Party Risk Management (TPRM) lead analyst.
+Given a vendor's structured risk profile, write a single-paragraph executive
+risk narrative (3-5 sentences, max 120 words).
+
+Requirements:
+  - Lead with the headline risk in one sentence.
+  - Cite specific numbers (risk score, breach dates, cert expiries, data classes).
+  - Use precise compliance vocabulary (GDPR Article 28/33, SOC 2, ISO 27001,
+    PCI-DSS, NIST SP 800-53 SA-9, SOX 404).
+  - End with 2-3 concrete next steps prefixed by "Recommended action:".
+  - Severity ranking: CRITICAL > HIGH > MEDIUM > LOW > NONE.
+  - Be terse — no platitudes, no marketing-speak, no "in conclusion".
+
+Output prose only. No markdown headers, no JSON, no bullet lists.
+```
+
+## Endpoint
+
+```http
+POST /risk/score/{vendor_id}/enhance?persist=true
+```
+
+```bash
+curl -X POST http://localhost:8000/risk/score/V0276/enhance
+```
+
+```json
+{
+  "vendor_id": "V0276",
+  "narrative": "The CRITICAL risk associated with Wade-Barrett SAS...",
+  "source": "llm",
+  "provider": "ollama",
+  "model": "llama3.2:latest",
+  "usage": { "input_tokens": 505, "output_tokens": 175 },
+  "deterministic_narrative": "Wade-Barrett SAS — CRITICAL: Recent Critical breach...",
+  "persisted": true
+}
+```
+
+Both the LLM and deterministic versions come back so the frontend can show the diff.
+
+## Provenance metadata
+
+When `persist=true`, the enhancement metadata is stashed on `RiskAssessment.components.meta`:
+
+```json
+{
+  "narrative_source": "llm",
+  "narrative_provider": "ollama",
+  "narrative_model": "llama3.2:latest",
+  "narrative_usage": { "input_tokens": 505, "output_tokens": 175 },
+  "deterministic_narrative": "Wade-Barrett SAS — CRITICAL: ..."
+}
+```
+
+The `GET /risk/score/{id}/latest` endpoint surfaces these as top-level fields (`narrative_source`, `narrative_provider`, `narrative_model`), which the frontend uses to render the **✨ AI** pill on the vendor detail page.
+
+## Frontend integration
+
+The vendor detail page's narrative card shows:
+
+- **✨ AI** gradient pill when `narrative_source === "llm"`
+- "rules" label when fallback / deterministic
+- **Enhance** button (Sparkles icon, spinner during call)
+- `via ollama · llama3.2:latest` footer with provider provenance
+- Framer-motion fade-in when the narrative updates
+
+## CLI: batch enhance
+
+For demo prep, enhance multiple vendors without the API running:
+
+```bash
+make enhance VID=V0276
+# Or for all CRITICAL vendors:
+cd apps/api && uv run python -m vrm_api.scoring.enhance_cli --all-critical
+```
+
+The `demo-reset` Make target pre-enhances the two hero vendors (`V0276`, `V0007`) so the first click in the demo already shows the AI narrative with no wait.
+
+## Failure handling
+
+If the LLM call fails for any reason (network, rate limit, malformed response):
+
+- Logs `narrative_enhance_failed` with the error
+- Returns `source: "deterministic-fallback"` with the original deterministic text
+- Never raises an exception to the caller
+
+This means the **/enhance endpoint never breaks the UI** — it either improves the narrative or leaves it untouched.

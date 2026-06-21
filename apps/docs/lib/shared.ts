@@ -1,11 +1,11 @@
-export const appName = 'My App';
+export const appName = 'VRM Intelligence';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
-// fill this with your actual GitHub info, for example:
+// GitHub repo (update if forking)
 export const gitConfig = {
-  user: 'fuma-nama',
-  repo: 'fumadocs',
+  user: 'yaswanthgudivada',
+  repo: 'SocGenHackathon',
   branch: 'main',
 };

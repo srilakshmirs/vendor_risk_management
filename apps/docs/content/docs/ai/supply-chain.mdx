@@ -1,0 +1,146 @@
+---
+title: Supply Chain (SBOM)
+description: Upload a CycloneDX or SPDX SBOM, get CVE rollup + per-component vulnerabilities + automatic risk re-scoring.
+---
+
+The brief doesn't explicitly require Software Bill of Materials (SBOM) ingestion, but it's the modern supply-chain risk signal — and the system handles it as a first-class feature alongside breaches, certs, and contracts.
+
+## What it gives you
+
+Upload a CycloneDX or SPDX JSON file for any vendor → the system:
+
+1. Parses the component list (libraries, packages, container images)
+2. Looks up each component against a CVE registry
+3. Stores `Sbom` + `SbomComponent` rows with vulnerability JSON
+4. Auto-triggers a vendor re-score so the operational component reflects new CVEs
+
+The scoring engine penalises:
+
+- **CRITICAL CVE count > 0** → +40 to operational_score
+- **HIGH CVE count > 0** (no CRITICAL) → +25 to operational_score
+
+A vendor with a single Critical CVE (like log4j) sees their composite score jump and may flip to a higher severity classification.
+
+## Files
+
+| File | Responsibility |
+|---|---|
+| `apps/api/src/vrm_api/models/sbom.py` | `Sbom` + `SbomComponent` ORM tables |
+| `apps/api/src/vrm_api/routers/sbom.py` | `POST /sbom/{vid}/upload` + `GET /sbom/{vid}` |
+| `apps/api/src/vrm_api/scoring/context.py` | counts CRITICAL/HIGH vulns into `VendorContext` |
+| `apps/api/src/vrm_api/scoring/components.py::operational_score` | applies the CVE penalty |
+| `apps/web/components/SupplyChainCard.tsx` | UI card on vendor detail page |
+| `data/sboms/sample-cyclonedx.json` | demo SBOM with planted log4j CRITICAL |
+
+## Endpoints
+
+### Upload
+
+```http
+POST /sbom/{vendor_id}/upload
+Content-Type: multipart/form-data
+
+file: <JSON bytes>
+```
+
+Accepted formats:
+
+- **CycloneDX** (`bomFormat: "CycloneDX"`) — recommended
+- **SPDX** (`spdxVersion: ...`) — packages array
+- **Custom** — bare `components: [{name, version}, ...]` fallback
+
+```bash
+curl -X POST http://localhost:8000/sbom/V0276/upload \
+  -F "file=@data/sboms/sample-cyclonedx.json"
+```
+
+```json
+{
+  "vendor_id": "V0276",
+  "format": "CycloneDX",
+  "components_count": 12,
+  "vulnerabilities_found": 1,
+  "critical_count": 1,
+  "high_count": 0,
+  "message": "SBOM processed. Found 12 components."
+}
+```
+
+The endpoint **automatically re-scores the vendor** before returning, so the next GET `/vendors/{id}` reflects the new composite score.
+
+### Retrieve
+
+```http
+GET /sbom/{vendor_id}
+```
+
+Returns a list (latest-first). Today only the latest is kept; older uploads are deleted to keep the data clean.
+
+```json
+[
+  {
+    "id": 12,
+    "format": "CycloneDX",
+    "version": "1.5",
+    "created_at": "2026-06-19T08:00:00",
+    "components": [
+      {
+        "name": "log4j-core",
+        "version": "2.14.1",
+        "type": "library",
+        "highest_severity": "CRITICAL",
+        "vulnerabilities": [
+          { "cve_id": "CVE-2021-44228", "severity": "CRITICAL", "description": "Log4Shell — remote code execution via crafted JNDI lookup" }
+        ]
+      },
+      ...
+    ]
+  }
+]
+```
+
+## Frontend integration
+
+The vendor detail page has a **Supply Chain (SBOM)** card showing:
+
+- **Severity rollup tiles** — CRITICAL / HIGH / MEDIUM / LOW CVE counts with colour-tinted backgrounds
+- **Tone pill** — "Action required" (red) when CRITICAL > 0, "Review" (orange) when HIGH > 0, "Clean" (emerald) when zero
+- **SBOM metadata** — format + version + component count + last scan date
+- **Top vulnerable components** — top-5 most-affected, sorted by highest severity then CVE count
+- **Risk impact callout** — explains the +40 or +25 to operational_score
+- **Upload button** — file picker, accepts `.json`, full upload flow inline
+- **Empty state** — package icon + "Upload an SBOM to scan for CVEs"
+
+After upload, three SWR caches invalidate (`["sboms", vid]`, `["latest-risk", vid]`, `["vendor", vid]`) so the card + risk gauge + breakdown all refresh.
+
+## Demo recipe
+
+1. Open `/vendors/V0276` — Supply Chain card shows the empty state
+2. Click **Upload SBOM** → pick `data/sboms/sample-cyclonedx.json`
+3. ~1 second later: card shows **CRITICAL: 1**, log4j-core flagged
+4. Click **Recompute risk** → operational_score jumps +40
+5. The vendor's composite may flip to a higher severity
+6. Click **✨ Enhance** on the narrative → LLM now mentions the log4j CVE explicitly
+
+## What CycloneDX gives you that JSON doesn't
+
+CycloneDX is the OWASP standard for SBOMs. It carries:
+
+- Component identity (name + version + PURL)
+- Dependency graph
+- License info
+- Hash + signature data
+- VEX (Vulnerability Exploitability eXchange) when extended
+
+The parser today reads the components list and dispatches to the CVE lookup. In production you'd integrate with the [OSV database](https://osv.dev) or a hosted scanner (Snyk, Mend, Aqua) — the schema is identical, only the lookup changes.
+
+## Why this matters
+
+The hackathon brief calls out:
+
+> "Cloud backup vendor claimed data ownership after terms change"
+> "Payment processor downgraded security, exposed during PCI-DSS audit"
+
+But the third bucket — **supply chain compromise** — is increasingly the dominant attack vector (SolarWinds, log4j, Codecov, MOVEit). Every modern TPRM team needs to ingest SBOMs from their critical vendors.
+
+This system does. And the dashboard surfaces it where analysts already look.

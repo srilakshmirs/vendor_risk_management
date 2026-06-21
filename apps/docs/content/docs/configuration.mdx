@@ -1,0 +1,137 @@
+---
+title: Configuration
+description: Every environment variable, the LLM provider toggle, and runtime knobs for the scheduler, warmup, and scoring weights.
+---
+
+All settings load from `.env` (in repo root) via `pydantic-settings`. The full source lives in `apps/api/src/vrm_api/config.py`.
+
+## App settings
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ENVIRONMENT` | `dev` | One of `dev`, `staging`, `prod`. Switches log format (console → JSON in prod). |
+| `LOG_LEVEL` | `INFO` | Standard Python log levels. |
+| `API_HOST` | `0.0.0.0` | uvicorn bind |
+| `API_PORT` | `8000` | uvicorn bind |
+| `CORS_ORIGINS` | `["http://localhost:3000","http://localhost:3001"]` | Allowed Next.js origins |
+
+## Database
+
+```bash
+DATABASE_URL=postgresql+psycopg://vrm:vrm@localhost:5432/vrm
+```
+
+The default expects the Postgres+pgvector container from `docker-compose.yml`. SQLite still works for zero-Docker dev:
+
+```bash
+DATABASE_URL=sqlite:///./vrm.db
+```
+
+> SQLite mode disables `/ask` (pgvector required). Everything else works.
+
+## LLM provider toggle
+
+The single most important variable. Selects which provider `get_llm()` returns; the rest of the codebase never branches on this.
+
+```bash
+LLM_PROVIDER=ollama    # default — local llama3.2:latest, no API key
+# LLM_PROVIDER=claude  # production — needs ANTHROPIC_API_KEY=sk-ant-...
+# LLM_PROVIDER=mock    # offline — canned responses for CI / no-network demos
+```
+
+<Cards>
+  <Card title="ollama" href="/docs/architecture/llm-providers#ollama">
+    Local. Free. Slower (~30 s for risk narratives). Best for dev.
+  </Card>
+  <Card title="claude" href="/docs/architecture/llm-providers#claude">
+    Hosted. Costs cents per demo. Sub-3 s narratives, Sonnet 4.6 quality.
+  </Card>
+  <Card title="mock" href="/docs/architecture/llm-providers#mock">
+    No network. Used by `pytest` and the `make eval` regression test.
+  </Card>
+</Cards>
+
+### Provider-specific settings
+
+<Tabs items={['Ollama', 'Claude', 'Mock']}>
+<Tab value="Ollama">
+
+```bash
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:latest
+```
+
+Inside Docker, point at the host: `http://host.docker.internal:11434` (already set in `docker-compose.yml`).
+
+</Tab>
+<Tab value="Claude">
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+CLAUDE_MODEL_FAST=claude-haiku-4-5-20251001
+CLAUDE_MODEL_SMART=claude-sonnet-4-6
+```
+
+The `prefer_smart=True` flag on `get_llm().complete()` opts into Sonnet. Default uses Haiku.
+
+</Tab>
+<Tab value="Mock">
+
+No extra config — `MockProvider` returns canned strings. Useful so the entire codebase exercises the LLM-call path even in CI without network.
+
+</Tab>
+</Tabs>
+
+## Scoring weights
+
+The 5 components of the composite risk score are weighted. Defaults:
+
+```bash
+WEIGHT_BREACH=0.30
+WEIGHT_DATA_ACCESS=0.25
+WEIGHT_COMPLIANCE=0.20
+WEIGHT_FINANCIAL=0.15
+WEIGHT_OPERATIONAL=0.10
+```
+
+> Weights **must sum to 1.0**. The eval harness re-runs against `vendor_labels.csv` on every `make eval` — adjust weights and re-run to see the rubric impact.
+
+See [Scoring → Engine](/docs/scoring/engine) for what each component measures.
+
+## Background services
+
+```bash
+RUN_SCHEDULER=true       # set false to skip APScheduler in CI / tests / eval-only runs
+WARMUP_ON_STARTUP=true   # pre-load embedder + LLM in background so first /ask isn't a cold start
+```
+
+The scheduler runs 5 jobs (expiry sweep, breach feed, financial scrape, cert verify, daily rescore). See [Operations → Scheduler](/docs/operations/scheduler).
+
+## Mock data feeds
+
+These point at the JSON files that simulate external systems. In production, swap for HTTP pollers.
+
+| Variable | Default | What it feeds |
+|---|---|---|
+| `VENDOR_REGISTRY_CSV` | `data/vendor_registry.csv` | Bulk vendor seed |
+| `VENDOR_LABELS_CSV` | `data/vendor_labels.csv` | Ground-truth labels for eval |
+| _(file path)_ | `data/breach_feed.json` | Mock HIBP / CISA-KEV |
+| _(file path)_ | `data/financial_signals.json` | Mock Bloomberg / DnB |
+| _(file path)_ | `data/cert_verifications.json` | Mock AICPA / BSI / Coalfire |
+
+## Web app
+
+```bash
+# apps/web/.env.local
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+Points the dashboard at the API. Change if you deploy them on different hosts.
+
+## See it all in `.env.example`
+
+Every variable documented above lives in `.env.example` at the repo root with inline comments. Copy it to `.env`, change what you need:
+
+```bash
+cp .env.example .env
+```

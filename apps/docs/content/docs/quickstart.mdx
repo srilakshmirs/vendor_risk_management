@@ -1,0 +1,120 @@
+---
+title: Quickstart
+description: Get the full stack running locally in under a minute. One command, two terminals.
+---
+
+## Prerequisites
+
+You need three things on your machine. Versions tested:
+
+| Tool | Version | Why |
+|---|---|---|
+| **Bun** | ≥ 1.2 | Monorepo install + Next.js dev runner |
+| **uv** | ≥ 0.8 | Python env + dep management (`apps/api`) |
+| **Docker** | ≥ 24 | Postgres + pgvector container |
+
+Optional but recommended:
+
+- **Ollama** with `llama3.2` pulled, for the default local-LLM path. The system also works with `LLM_PROVIDER=claude` (Anthropic API) or `LLM_PROVIDER=mock` (no LLM at all).
+
+## Three-step setup
+
+<Steps>
+<Step>
+### Install dependencies
+
+```bash
+make install
+```
+
+This runs `bun install` for the JS workspaces and `uv sync` for the Python API.
+</Step>
+
+<Step>
+### Pick your LLM (optional)
+
+The default is Ollama (free, local). If you want Claude:
+
+```bash
+cp .env.example .env
+# Edit .env:
+#   LLM_PROVIDER=claude
+#   ANTHROPIC_API_KEY=sk-ant-...
+```
+
+See [Configuration](/docs/configuration) for the full toggle.
+</Step>
+
+<Step>
+### Prepare the demo dataset
+
+One command builds everything from scratch — Postgres, 400 vendors, scoring, embeddings, alerts, breach feed, hero-vendor narratives:
+
+```bash
+make demo-reset
+```
+
+This takes ~14 s with mock LLM, ~75 s with Ollama, ~20 s with Claude.
+</Step>
+</Steps>
+
+## Run
+
+Open two terminals.
+
+<Tabs items={['Terminal 1 — API', 'Terminal 2 — Web']}>
+<Tab value="Terminal 1 — API">
+
+```bash
+make api
+```
+
+→ http://localhost:8000 (live API)
+→ http://localhost:8000/docs (interactive OpenAPI / Swagger UI)
+→ http://localhost:8000/healthz (readiness probe)
+
+</Tab>
+<Tab value="Terminal 2 — Web">
+
+```bash
+make web
+```
+
+→ http://localhost:3000 (the dashboard you'll demo)
+
+</Tab>
+</Tabs>
+
+## Verify the rubric numbers
+
+The headline claim — "5 of 5 rubric metrics passing" — is reproducible from a clean clone:
+
+```bash
+make eval
+```
+
+Sample output:
+
+```text
+Anomaly-type accuracy : 90.0%   (360/400)
+Severity accuracy     : 90.0%
+Binary detection      : precision=100.0%  recall=100.0%  F1=1.000
+
+[PASS] anomaly_accuracy_>=_0.80
+[PASS] critical_recall_>=_0.95
+[PASS] high_recall_>=_0.80
+[PASS] binary_f1_>=_0.85
+```
+
+The same eval is regression-gated by `pytest -k rubric`. CI fails if any gate drops.
+
+## Click here next
+
+<Cards>
+  <Card title="Configuration" href="/docs/configuration">
+    Env vars, LLM toggle, scheduler control, scoring weight tuning.
+  </Card>
+  <Card title="Live demo beats" href="/docs/operations/demo-flow">
+    The 7 planted moments for a 3-minute walkthrough.
+  </Card>
+</Cards>

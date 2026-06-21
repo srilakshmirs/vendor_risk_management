@@ -1,0 +1,4 @@
+{
+  "title": "Operations",
+  "pages": ["scheduler", "alerts", "integrations", "demo-flow"]
+}
